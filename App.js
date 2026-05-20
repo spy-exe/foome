@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
-import { View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -24,8 +25,10 @@ import RestauranteScreen from './screens/RestauranteScreen';
 import CarrinhoScreen    from './screens/CarrinhoScreen';
 import PedidosScreen     from './screens/PedidosScreen';
 import MapaScreen        from './screens/MapaScreen';
+import OnboardingScreen  from './screens/OnboardingScreen';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CarrinhoProvider } from './contexts/CarrinhoContext';
+import { C, F } from './constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,6 +59,59 @@ function RootNavigator() {
   );
 }
 
+function SplashAnimada({ onFinish, onLayout }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 80,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const timer = setTimeout(onFinish, 2000);
+    return () => clearTimeout(timer);
+  }, [onFinish, opacity, scale]);
+
+  return (
+    <View
+      onLayout={onLayout}
+      style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}
+    >
+      <Animated.View style={{ opacity, transform: [{ scale }], alignItems: 'center' }}>
+        <View style={{
+          width: 90,
+          height: 90,
+          borderRadius: 28,
+          backgroundColor: C.brandLight,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 16,
+          borderWidth: 2,
+          borderColor: C.brandBorder,
+        }}>
+          <Text style={{ fontSize: 44 }}>🍔</Text>
+        </View>
+        <Text style={{ fontFamily: F.headingLg, fontSize: 40, color: C.brand }}>
+          Foome
+        </Text>
+        <Text style={{ fontFamily: F.regular, fontSize: 14, color: C.ink3, marginTop: 6 }}>
+          Comida boa, na hora certa.
+        </Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular':      Inter_400Regular,
@@ -66,20 +122,37 @@ export default function App() {
     'Poppins-Bold':       Poppins_700Bold,
     'Poppins-ExtraBold':  Poppins_800ExtraBold,
   });
+  const [mostrarSplash, setMostrarSplash] = useState(true);
+  const [onboardingFeito, setOnboardingFeito] = useState(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@foome_onboarding_done')
+      .then(valor => setOnboardingFeito(valor === 'true'))
+      .catch(() => setOnboardingFeito(false));
+  }, []);
 
   const onReady = useCallback(async () => {
     if (fontsLoaded || fontError) await SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
+  const finalizarSplash = useCallback(() => setMostrarSplash(false), []);
 
   if (!fontsLoaded && !fontError) return null;
+  if (mostrarSplash) {
+    return <SplashAnimada onLayout={onReady} onFinish={finalizarSplash} />;
+  }
+  if (onboardingFeito === null) return null;
 
   return (
     <AppProvider>
       <CarrinhoProvider>
         <View style={{ flex: 1 }} onLayout={onReady}>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
+          {!onboardingFeito ? (
+            <OnboardingScreen onFinish={() => setOnboardingFeito(true)} />
+          ) : (
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+          )}
         </View>
       </CarrinhoProvider>
     </AppProvider>
