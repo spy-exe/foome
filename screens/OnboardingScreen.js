@@ -117,6 +117,7 @@ export default function OnboardingScreen({ onFinish }) {
     const titleStyle = ativo
       ? {
           opacity: titleAnim,
+          backgroundColor: 'transparent',
           transform: [
             {
               translateY: titleAnim.interpolate({
@@ -218,6 +219,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 28,
     paddingTop: Platform.OS === 'ios' ? 76 : 58,
+    overflow: 'hidden',
   },
   emojiHalo: {
     width: 152,
