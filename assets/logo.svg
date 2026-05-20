@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8452C"/>
+      <stop offset="100%" style="stop-color:#FF6B3D"/>
+    </linearGradient>
+  </defs>
+  <circle cx="30" cy="30" r="18" fill="url(#g)" opacity="0.15"/>
+  <text x="30" y="36" text-anchor="middle" font-size="24">🍔</text>
+  <text x="58" y="36" font-family="'Poppins', sans-serif" font-weight="800" font-size="28" fill="#17172B" letter-spacing="-1">
+    Foome
+  </text>
+</svg>
