@@ -52,7 +52,11 @@ export default function PedidosScreen({ navigation, route }) {
           const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.confirmado;
 
           return (
-            <View style={s.card}>
+            <TouchableOpacity
+              style={s.card}
+              onPress={() => navigation.navigate('DetalhePedido', { pedido: item })}
+              activeOpacity={0.9}
+            >
               <View style={[s.accent, { backgroundColor: item.restauranteCor ?? C.brand }]} />
               <View style={s.cardBody}>
                 <View style={s.cardTop}>
@@ -90,7 +94,7 @@ export default function PedidosScreen({ navigation, route }) {
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         }}
         ListEmptyComponent={

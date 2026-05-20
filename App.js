@@ -23,6 +23,7 @@ import HomeScreen        from './screens/HomeScreen';
 import RestauranteScreen from './screens/RestauranteScreen';
 import CarrinhoScreen    from './screens/CarrinhoScreen';
 import PedidosScreen     from './screens/PedidosScreen';
+import DetalhePedidoScreen from './screens/DetalhePedidoScreen';
 import MapaScreen        from './screens/MapaScreen';
 
 SplashScreen.preventAutoHideAsync();
@@ -57,6 +58,7 @@ export default function App() {
           <Stack.Screen name="Restaurante" component={RestauranteScreen} />
           <Stack.Screen name="Carrinho"    component={CarrinhoScreen} />
           <Stack.Screen name="Pedidos"     component={PedidosScreen} />
+          <Stack.Screen name="DetalhePedido" component={DetalhePedidoScreen} />
           <Stack.Screen name="Mapa"        component={MapaScreen} />
         </Stack.Navigator>
       </NavigationContainer>
