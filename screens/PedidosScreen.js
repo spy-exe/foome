@@ -325,7 +325,7 @@ export default function PedidosScreen({ navigation }) {
                     style={s.acompanharBtn}
                     onPress={() => {
                       haptic.select();
-                      navigation.navigate('Inicio', {
+                      navigation.navigate('HomeTab', {
                         screen: 'Rastreamento',
                         params: { pedido: item },
                       });
