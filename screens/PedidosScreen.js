@@ -15,6 +15,19 @@ import SkeletonShimmer from '../components/SkeletonShimmer';
 import { C, F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 
+const STATUS_CONFIG = {
+  confirmado: { label: 'Confirmado', cor: C.teal, bg: C.tealLight, icon: 'check-circle' },
+  preparando: { label: 'Em preparo', cor: C.amber, bg: C.amberLight, icon: 'clock' },
+  a_caminho: { label: 'A caminho', cor: '#2563EB', bg: '#EFF6FF', icon: 'truck' },
+  entregue: { label: 'Entregue', cor: C.ink3, bg: C.bg, icon: 'package' },
+};
+
+const PROXIMO_STATUS = {
+  confirmado: 'preparando',
+  preparando: 'a_caminho',
+  a_caminho: 'entregue',
+};
+
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit', month: 'short',
@@ -228,6 +241,34 @@ export default function PedidosScreen({ navigation }) {
     timeoutsAvaliacao.current.forEach(clearTimeout);
   }, []);
 
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarBadge: pedidos.length > 0 ? pedidos.length : undefined,
+    });
+  }, [navigation, pedidos.length]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPedidos(prev => {
+        let mudou = false;
+        const novos = prev.map(pedido => {
+          const statusAtual = pedido.status || 'confirmado';
+          const proximo = PROXIMO_STATUS[statusAtual];
+
+          if (!proximo) return pedido;
+          mudou = true;
+          return { ...pedido, status: proximo };
+        });
+
+        if (!mudou) return prev;
+        salvarPedidos(novos).catch(() => {});
+        return novos;
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
@@ -295,11 +336,17 @@ export default function PedidosScreen({ navigation }) {
             <PedidosSkeletonList />
           ) : (
           <View style={s.vazio}>
-            <View style={s.vazioIcon}>
-              <Feather name="package" size={38} color={C.ink4} />
+            <View style={s.vazioIlustracao}>
+              <View style={s.vazioHalo} />
+              <View style={s.vazioIcon}>
+                <Feather name="package" size={38} color={C.brand} />
+              </View>
+              <View style={s.vazioTruck}>
+                <Feather name="truck" size={18} color="#fff" />
+              </View>
             </View>
             <Text style={s.vazioTitulo}>Ainda sem pedidos</Text>
-            <Text style={s.vazioSub}>Seus pedidos confirmados aparecem aqui</Text>
+            <Text style={s.vazioSub}>Finalize seu primeiro pedido para acompanhar o preparo e a entrega aqui.</Text>
             <TouchableOpacity
               style={s.vazioBtn}
               onPress={() => {
@@ -416,21 +463,51 @@ const s = StyleSheet.create({
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   qtdLabel:   { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
+  cardTotalWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardTotal:  { fontFamily: F.headingLg, fontSize: 18 },
 
-  vazio: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
+  vazio: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 32 },
+  vazioIlustracao: {
+    width: 118,
+    height: 104,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  vazioHalo: {
+    position: 'absolute',
+    width: 102,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: C.brandLight,
+    borderWidth: 1,
+    borderColor: C.brandBorder,
+  },
   vazioIcon: {
     width: 80, height: 80,
     borderRadius: 24,
-    backgroundColor: C.bg,
+    backgroundColor: C.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: C.brandBorder,
+    ...SHADOW.card,
+  },
+  vazioTruck: {
+    position: 'absolute',
+    right: 5,
+    bottom: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.brand,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: C.bg,
   },
   vazioTitulo: { fontFamily: F.heading,  fontSize: 18, color: C.ink, marginBottom: 6 },
-  vazioSub:    { fontFamily: F.regular,  fontSize: 14, color: C.ink3, textAlign: 'center', marginBottom: 24 },
+  vazioSub:    { fontFamily: F.regular,  fontSize: 14, lineHeight: 20, color: C.ink3, textAlign: 'center', marginBottom: 24 },
   vazioBtn: {
     flexDirection: 'row',
     alignItems: 'center',
