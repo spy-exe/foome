@@ -7,7 +7,6 @@ import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { RESTAURANTES } from '../services/dados';
-import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 
@@ -15,7 +14,6 @@ const CARD_H   = 210;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
 export default function MapaScreen({ navigation }) {
-  const { usuario } = useApp();
   const { setRestaurante } = useCarrinho();
   const [locOk,    setLocOk]    = useState(false);
   const [buscando, setBuscando] = useState(true);
@@ -88,7 +86,7 @@ export default function MapaScreen({ navigation }) {
 
       {/* ── Header flutuante ── */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+        <TouchableOpacity onPress={() => navigation.navigate('HomeTab')} style={s.backBtn}>
           <Feather name="arrow-left" size={20} color={C.ink} />
         </TouchableOpacity>
         <View style={s.headerText}>
@@ -132,9 +130,11 @@ export default function MapaScreen({ navigation }) {
             <TouchableOpacity
               style={[s.sheetBtn, { backgroundColor: selecionado.cor }]}
               onPress={() => {
-                if (!usuario) return;
                 setRestaurante(selecionado);
-                navigation.navigate('Restaurante', { restaurante: selecionado });
+                navigation.navigate('HomeTab', {
+                  screen: 'Restaurante',
+                  params: { restaurante: selecionado },
+                });
               }}
               activeOpacity={0.85}
             >

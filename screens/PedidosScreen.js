@@ -18,12 +18,25 @@ function formatarData(iso) {
 }
 
 export default function PedidosScreen({ navigation }) {
-  const { usuario } = useApp();
+  const { usuario, atualizarPedidosCount } = useApp();
   const [pedidos, setPedidos] = useState([]);
 
   useFocusEffect(useCallback(() => {
-    getPedidos().then(setPedidos);
-  }, [usuario?.email]));
+    let ativo = true;
+
+    async function carregarPedidos() {
+      const pedidosCarregados = await getPedidos();
+      if (!ativo) return;
+      setPedidos(pedidosCarregados);
+      atualizarPedidosCount(pedidosCarregados);
+    }
+
+    carregarPedidos();
+
+    return () => {
+      ativo = false;
+    };
+  }, [usuario?.email, atualizarPedidosCount]));
 
   return (
     <View style={s.root}>
@@ -92,7 +105,7 @@ export default function PedidosScreen({ navigation }) {
             <Text style={s.vazioSub}>Seus pedidos confirmados aparecem aqui</Text>
             <TouchableOpacity
               style={s.vazioBtn}
-              onPress={() => navigation.navigate('Home')}
+              onPress={() => navigation.navigate('HomeTab', { screen: 'Home' })}
             >
               <Text style={s.vazioBtnTxt}>Explorar restaurantes</Text>
               <Feather name="arrow-right" size={15} color="#fff" />

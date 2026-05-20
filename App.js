@@ -19,11 +19,7 @@ import {
 
 import LoginScreen       from './screens/LoginScreen';
 import CadastroScreen    from './screens/CadastroScreen';
-import HomeScreen        from './screens/HomeScreen';
-import RestauranteScreen from './screens/RestauranteScreen';
-import CarrinhoScreen    from './screens/CarrinhoScreen';
-import PedidosScreen     from './screens/PedidosScreen';
-import MapaScreen        from './screens/MapaScreen';
+import TabNavigator      from './navigation/TabNavigator';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CarrinhoProvider } from './contexts/CarrinhoContext';
 
@@ -39,13 +35,7 @@ function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: true }}>
       {usuario ? (
-        <>
-          <Stack.Screen name="Home"        component={HomeScreen} />
-          <Stack.Screen name="Restaurante" component={RestauranteScreen} />
-          <Stack.Screen name="Carrinho"    component={CarrinhoScreen} />
-          <Stack.Screen name="Pedidos"     component={PedidosScreen} />
-          <Stack.Screen name="Mapa"        component={MapaScreen} />
-        </>
+        <Stack.Screen name="Main" component={TabNavigator} />
       ) : (
         <>
           <Stack.Screen name="Login"    component={LoginScreen} />
