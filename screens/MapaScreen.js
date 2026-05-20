@@ -63,6 +63,7 @@ export default function MapaScreen({ navigation }) {
       if (status !== 'granted') {
         setUserLoc(null);
         setLocStatus('denied');
+        mapRef.current?.animateToRegion(VASSOURAS, 500);
         return;
       }
 
@@ -82,6 +83,7 @@ export default function MapaScreen({ navigation }) {
     } catch (e) {
       setUserLoc(null);
       setLocStatus('denied');
+      mapRef.current?.animateToRegion(VASSOURAS, 500);
     }
   }
 
