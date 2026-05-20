@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-white text-ink transition-colors duration-200 dark:bg-[#12121A] dark:text-[#F0F0F7];
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto max-w-[1100px] px-6;
+  }
+
+  .section-padding {
+    @apply py-20 md:py-28;
+  }
+
+  .glass {
+    @apply border-b border-surface-border bg-white/90 backdrop-blur-md dark:border-[#2A2A3A] dark:bg-[#1E1E2A]/90;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-8 py-3.5 font-heading text-base font-bold text-white shadow-lg shadow-brand/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand/30;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border-2 border-surface-border bg-transparent px-8 py-3.5 font-heading text-base font-bold text-ink transition-all duration-200 hover:border-brand hover:text-brand dark:border-[#2A2A3A] dark:text-[#F0F0F7];
+  }
+
+  .section-tag {
+    @apply mb-3 inline-block rounded-full bg-brand-light px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-brand dark:bg-[#2A1513];
+  }
+
+  .section-title {
+    @apply mb-3 font-heading text-3xl font-bold leading-tight tracking-tight text-ink dark:text-[#F0F0F7] md:text-4xl lg:text-5xl;
+  }
+
+  .section-subtitle {
+    @apply mx-auto max-w-lg text-base text-ink-3 dark:text-[#9494B2] md:text-lg;
+  }
+
+  .card {
+    @apply rounded-2xl border border-surface-border bg-[#F5F5FA] p-6 transition-all duration-300 hover:border-transparent hover:shadow-lg dark:border-[#2A2A3A] dark:bg-[#1E1E2A] md:p-8;
+  }
+}
