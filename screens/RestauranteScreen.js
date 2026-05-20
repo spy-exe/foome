@@ -1,23 +1,151 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, StatusBar, Platform,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Platform,
+  Animated as RNAnimated,
 } from 'react-native';
+import Reanimated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { formatarPreco } from '../services/dados';
+import { getNotaMediaRestaurante } from '../services/avaliacao';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
-import Stepper from '../components/Stepper';
+import RestauranteProdutoCard from '../components/RestauranteProdutoCard';
+import SubcategoriaTabs from '../components/SubcategoriaTabs';
+import ProdutoDetalhesSheet from '../components/ProdutoDetalhesSheet';
+import { haptic } from '../utils/haptics';
+
+const HEADER_MAX = 220;
+const HEADER_MIN = 100;
+const SCROLL_OFFSET = HEADER_MAX - HEADER_MIN;
+
+const SUBCATEGORIAS = [
+  { key: 'todas', label: 'Todas' },
+  { key: 'entradas', label: 'Entradas' },
+  { key: 'principais', label: 'Principais' },
+  { key: 'bebidas', label: 'Bebidas' },
+  { key: 'sobremesas', label: 'Sobremesas' },
+];
+
+function classificarProduto(produto) {
+  if (['🍟', '🥟', '🥑', '🫓', '🍞', '🌭'].includes(produto.emoji)) return 'entradas';
+  if (['🥤', '🍲', '🍵', '🧃'].includes(produto.emoji)) return 'bebidas';
+  if (['🍮', '🍫', '🫐', '🍓', '🧁'].includes(produto.emoji)) return 'sobremesas';
+  if (['🍔', '🍕', '🌮', '🍝', '🥩', '🍖', '🍣', '🌯', '🥗', '🫕', '🍗', '🌶️', '🧀'].includes(produto.emoji)) {
+    return 'principais';
+  }
+  return 'principais';
+}
 
 export default function RestauranteScreen({ route, navigation }) {
   const restaurante = route?.params?.restaurante;
   const { adicionar, remover, totalItens, totalPreco, itens, setRestaurante } = useCarrinho();
+  const [notaMedia, setNotaMedia] = useState(null);
+  const [subCat, setSubCat] = useState('todas');
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [tamanho, setTamanho] = useState('M');
+  const [observacoes, setObservacoes] = useState('');
+  const scrollY = useRef(new RNAnimated.Value(0)).current;
+  const badgeScale = useSharedValue(1);
 
   useEffect(() => {
     if (restaurante) setRestaurante(restaurante);
   }, [restaurante?.id]);
 
-  const qtd = (id) => itens.find(i => i.id === id)?.qtd ?? 0;
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarNotaMedia() {
+      if (!restaurante?.nome) return;
+      const media = await getNotaMediaRestaurante(restaurante.nome);
+      if (ativo) setNotaMedia(media);
+    }
+
+    carregarNotaMedia();
+    return () => {
+      ativo = false;
+    };
+  }, [restaurante?.nome]);
+
+  useEffect(() => {
+    if (totalItens > 0) {
+      badgeScale.value = withSequence(
+        withSpring(1.3, { damping: 8, stiffness: 220 }),
+        withSpring(1, { damping: 9, stiffness: 220 }),
+      );
+    }
+  }, [totalItens]);
+
+  const qtd = id => itens.find(item => item.id === id)?.qtd ?? 0;
+  const produtosFiltrados = useMemo(() => {
+    const produtos = restaurante?.produtos ?? [];
+    if (subCat === 'todas') return produtos;
+    return produtos.filter(produto => classificarProduto(produto) === subCat);
+  }, [restaurante?.produtos, subCat]);
+
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, SCROLL_OFFSET],
+    outputRange: [HEADER_MAX, HEADER_MIN],
+    extrapolate: 'clamp',
+  });
+  const emojiSize = scrollY.interpolate({
+    inputRange: [0, SCROLL_OFFSET],
+    outputRange: [44, 24],
+    extrapolate: 'clamp',
+  });
+  const nomeSize = scrollY.interpolate({
+    inputRange: [0, SCROLL_OFFSET],
+    outputRange: [22, 16],
+    extrapolate: 'clamp',
+  });
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, SCROLL_OFFSET / 2, SCROLL_OFFSET],
+    outputRange: [1, 0.5, 0.3],
+    extrapolate: 'clamp',
+  });
+  const handleScroll = RNAnimated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false },
+  );
+  const badgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeScale.value }],
+  }));
+
+  function abrirDetalhes(produto) {
+    haptic.select();
+    setProdutoSelecionado(produto);
+    setTamanho('M');
+    setObservacoes('');
+    setSheetVisible(true);
+  }
+
+  function fecharDetalhes() {
+    haptic.select();
+    setSheetVisible(false);
+  }
+
+  function descartarDetalhes() {
+    setProdutoSelecionado(null);
+    setObservacoes('');
+    setTamanho('M');
+  }
+
+  function adicionarSelecionado() {
+    if (!produtoSelecionado) return;
+    haptic.light();
+    adicionar(produtoSelecionado);
+    setSheetVisible(false);
+  }
 
   if (!restaurante) return null;
 
@@ -25,18 +153,28 @@ export default function RestauranteScreen({ route, navigation }) {
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor={restaurante.cor} />
 
-      {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: restaurante.cor }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+      <RNAnimated.View style={[s.header, { backgroundColor: restaurante.cor, height: headerHeight }]}>
+        <TouchableOpacity
+          onPress={() => {
+            haptic.select();
+            navigation.goBack();
+          }}
+          style={s.backBtn}
+        >
           <Feather name="arrow-left" size={20} color="#fff" />
         </TouchableOpacity>
-        <View style={s.headerInfo}>
-          <Text style={{ fontSize: 44, marginBottom: 6 }}>{restaurante.emoji}</Text>
-          <Text style={s.headerNome}>{restaurante.nome}</Text>
+
+        <RNAnimated.View style={[s.headerInfo, { opacity: headerOpacity }]}>
+          <RNAnimated.Text style={[s.headerEmoji, { fontSize: emojiSize }]}>
+            {restaurante.emoji}
+          </RNAnimated.Text>
+          <RNAnimated.Text style={[s.headerNome, { fontSize: nomeSize }]}>
+            {restaurante.nome}
+          </RNAnimated.Text>
           <View style={s.badges}>
             <View style={s.badge}>
               <Ionicons name="star" size={11} color={C.amber} />
-              <Text style={s.badgeTxt}>{restaurante.avaliacao}</Text>
+              <Text style={s.badgeTxt}>{(notaMedia ?? restaurante.avaliacao).toFixed(1)}</Text>
             </View>
             <View style={s.badge}>
               <Feather name="clock" size={11} color="rgba(255,255,255,0.75)" />
@@ -51,77 +189,102 @@ export default function RestauranteScreen({ route, navigation }) {
               </Text>
             </View>
           </View>
-        </View>
-      </View>
+        </RNAnimated.View>
+      </RNAnimated.View>
 
-      {/* ── Produtos ── */}
-      <FlatList
-        data={restaurante.produtos}
-        keyExtractor={i => i.id}
+      <RNAnimated.FlatList
+        data={produtosFiltrados}
+        keyExtractor={item => item.id}
         contentContainerStyle={s.lista}
-        renderItem={({ item }) => {
-          const n = qtd(item.id);
-          return (
-            <View style={s.card}>
-              <Text style={{ fontSize: 36 }}>{item.emoji}</Text>
-              <View style={s.prodInfo}>
-                <Text style={s.prodNome}>{item.nome}</Text>
-                <Text style={s.prodDesc} numberOfLines={2}>{item.descricao}</Text>
-                <Text style={[s.prodPreco, { color: restaurante.cor }]}>
-                  {formatarPreco(item.preco)}
-                </Text>
-              </View>
-
-              <Stepper
-                quantidade={n}
-                cor={restaurante.cor}
-                onAdicionar={() => adicionar(item)}
-                onRemover={() => remover(item.id)}
-              />
-            </View>
-          );
-        }}
+        ListHeaderComponent={(
+          <SubcategoriaTabs
+            tabs={SUBCATEGORIAS}
+            atual={subCat}
+            onChange={setSubCat}
+            cor={restaurante.cor}
+          />
+        )}
+        ListEmptyComponent={<Text style={s.emptyTxt}>Sem itens nessa categoria</Text>}
+        stickyHeaderIndices={[0]}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        renderItem={({ item }) => (
+          <RestauranteProdutoCard
+            item={item}
+            cor={restaurante.cor}
+            quantidade={qtd(item.id)}
+            onAdicionar={() => adicionar(item)}
+            onRemover={() => remover(item.id)}
+            onPress={() => abrirDetalhes(item)}
+          />
+        )}
       />
 
-      {/* ── CTA flutuante ── */}
       {totalItens > 0 && (
-        <TouchableOpacity
-          style={[s.cta, { backgroundColor: restaurante.cor }]}
-          onPress={() => navigation.navigate('Carrinho')}
-          activeOpacity={0.88}
-        >
-          <View style={s.ctaBadge}>
-            <Text style={s.ctaBadgeTxt}>{totalItens}</Text>
-          </View>
-          <Text style={s.ctaLabel}>Ver carrinho</Text>
-          <Text style={s.ctaTotal}>{formatarPreco(totalPreco)}</Text>
-        </TouchableOpacity>
+        <View style={[s.cta, { backgroundColor: restaurante.cor }]}>
+          <TouchableOpacity
+            style={s.ctaPress}
+            onPress={() => {
+              haptic.select();
+              navigation.navigate('Carrinho');
+            }}
+            activeOpacity={0.88}
+          >
+            <Reanimated.View style={[s.ctaBadge, badgeStyle]}>
+              <Text style={s.ctaBadgeTxt}>{totalItens}</Text>
+            </Reanimated.View>
+            <Text style={s.ctaLabel}>Ver carrinho</Text>
+            <Text style={s.ctaTotal}>{formatarPreco(totalPreco)}</Text>
+          </TouchableOpacity>
+        </View>
       )}
+
+      <ProdutoDetalhesSheet
+        visible={sheetVisible}
+        produto={produtoSelecionado}
+        cor={restaurante.cor}
+        tamanho={tamanho}
+        observacoes={observacoes}
+        onTamanhoChange={setTamanho}
+        onObservacoesChange={setObservacoes}
+        onAdicionar={adicionarSelecionado}
+        onClose={fecharDetalhes}
+        onDismiss={descartarDetalhes}
+      />
     </View>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-
   header: {
     paddingTop: Platform.OS === 'ios' ? 52 : 42,
-    paddingBottom: 24,
     paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 18,
+    overflow: 'hidden',
   },
   backBtn: {
     position: 'absolute',
     left: 16,
     top: Platform.OS === 'ios' ? 52 : 42,
-    width: 40, height: 40,
+    width: 40,
+    height: 40,
     borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerInfo: { alignItems: 'center', marginTop: 4 },
-  headerNome: { fontFamily: F.headingLg, fontSize: 22, color: '#fff', letterSpacing: -0.6, marginBottom: 10 },
+  headerInfo: { alignItems: 'center' },
+  headerEmoji: { marginBottom: 6 },
+  headerNome: {
+    fontFamily: F.headingLg,
+    fontSize: 22,
+    color: '#fff',
+    letterSpacing: 0,
+    marginBottom: 10,
+  },
   badges: { flexDirection: 'row', gap: 6 },
   badge: {
     flexDirection: 'row',
@@ -134,42 +297,42 @@ const s = StyleSheet.create({
   },
   badgeWhite: { backgroundColor: '#fff' },
   badgeTxt: { fontFamily: F.medium, fontSize: 12, color: '#fff' },
-
-  lista: { padding: 16, paddingBottom: 110 },
-
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
-    gap: 12,
-    ...SHADOW.card,
+  lista: { padding: 16, paddingBottom: 120 },
+  emptyTxt: {
+    fontFamily: F.medium,
+    fontSize: 13,
+    color: C.ink3,
+    textAlign: 'center',
+    paddingVertical: 26,
   },
-  prodInfo:  { flex: 1 },
-  prodNome:  { fontFamily: F.headingSm, fontSize: 15, color: C.ink, letterSpacing: -0.2 },
-  prodDesc:  { fontFamily: F.regular,   fontSize: 12, color: C.ink3, marginTop: 3, lineHeight: 17 },
-  prodPreco: { fontFamily: F.bold,      fontSize: 16, marginTop: 6 },
-
   cta: {
     position: 'absolute',
-    bottom: 24, left: 16, right: 16,
+    bottom: 24,
+    left: 16,
+    right: 16,
     borderRadius: 20,
-    padding: 18,
+    padding: 0,
     flexDirection: 'row',
     alignItems: 'center',
     ...SHADOW.float,
   },
+  ctaPress: {
+    flex: 1,
+    minHeight: 64,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   ctaBadge: {
     backgroundColor: 'rgba(255,255,255,0.24)',
-    width: 28, height: 28,
+    width: 28,
+    height: 28,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
-  ctaBadgeTxt: { fontFamily: F.bold,    fontSize: 13, color: '#fff' },
-  ctaLabel:    { fontFamily: F.heading, fontSize: 16, color: '#fff', flex: 1 },
-  ctaTotal:    { fontFamily: F.bold,    fontSize: 16, color: '#fff' },
+  ctaBadgeTxt: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
+  ctaLabel: { fontFamily: F.heading, fontSize: 16, color: '#fff', flex: 1 },
+  ctaTotal: { fontFamily: F.bold, fontSize: 16, color: '#fff' },
 });
