@@ -56,3 +56,39 @@ export const SHADOW = {
     elevation: 10,
   },
 };
+
+// Spacing system (multiples of 4)
+export const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
+// Border radius system
+export const RADIUS = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  full: 9999,
+};
+
+// Animation presets
+export const ANIM = {
+  fast: 200,
+  normal: 300,
+  slow: 500,
+};
+
+// Haptic presets for expo-haptics
+export const HAPTIC = {
+  light: 'light',
+  medium: 'medium',
+  heavy: 'heavy',
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+};
