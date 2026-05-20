@@ -207,3 +207,131 @@ Esta auditoria foi feita por leitura estatica do codigo-fonte em 20/05/2026, sem
 | B22 | `app.json` | 20 | `adaptiveIcon.backgroundColor` usa `#FF4757`, diferente da marca `#E8452C`. | Baixo |
 | B23 | `constants/theme.js` | 21-33 | `ink3` e `teal` tem contraste baixo em texto pequeno. | Baixo |
 | B24 | `screens/LoginScreen.js` | 232 | `letterSpacing: -1.5` no logo pode reduzir legibilidade em devices menores. | Baixo |
+
+## 4. Sugestoes de UX
+
+### 4.1 Alta prioridade
+
+1. **Unificar autenticacao no servico `auth`.** O app ja tem `services/auth.js` com hash e mensagens de erro, mas `LoginScreen` e `CadastroScreen` nao usam esse servico. Isso reduz risco de seguranca e evita divergencia entre usuarios com `senha` e `senhaHash`.
+2. **Adicionar validacao inline de cadastro.** Email invalido, senha curta e foto ausente so aparecem no submit ou nem aparecem. Validacao em tempo real evita tentativa frustrada no fim do fluxo.
+3. **Implementar Perfil real antes da avaliacao.** A tela esta exposta no avatar da Home, mas so mostra placeholder. Para prova, isso parece funcionalidade quebrada.
+4. **Trocar Stack-only por navegacao principal clara.** O roteiro do produto espera tabs para Home, Pedidos, Mapa e Perfil. Sem tabs, o usuario depende de CTAs contextuais e algumas telas ficam escondidas.
+5. **Resolver tema escuro ponta a ponta.** `ThemeProvider` existe, mas a UI consome tema estatico. Ou remover promessa de dark mode do roteiro, ou conectar telas ao contexto.
+
+### 4.2 Media prioridade
+
+6. **Centralizar mapa na localizacao real quando permitido.** Hoje a permissao so ativa o ponto do usuario; nao ha `getCurrentPositionAsync` nem botao de recenter.
+7. **Criar tela de detalhe/timeline do pedido.** A lista mostra status, mas nao ha acompanhamento detalhado. Isso e uma parte forte da experiencia de delivery.
+8. **Melhorar feedback de falha biometrica.** Exibir motivo especifico ajuda quando o usuario cancela, nao tem biometria ou o sensor falha.
+9. **Criar confirmacao ao trocar de restaurante com carrinho cheio.** O contexto limpa itens automaticamente ao mudar de restaurante; o usuario pode perder carrinho sem entender.
+10. **Aumentar touch targets do Stepper.** O controle e central para compra e esta abaixo do minimo recomendado.
+
+### 4.3 Baixa prioridade
+
+11. **Adicionar imagem/logo no splash.** O app inicia com fundo branco generico; uma marca visual reduz sensacao de template.
+12. **Adicionar debounce na busca.** Hoje o dataset e pequeno, mas a busca por tecla nao escala.
+13. **Padronizar cor do adaptive icon.** `app.json` usa uma cor diferente da marca.
+14. **Revisar contraste de captions e textos verdes.** Alguns textos pequenos podem falhar WCAG AA.
+15. **Adicionar empty states acionaveis no mapa e carrinho.** Quando um estado invalido acontece, a tela deve orientar o proximo passo em vez de retornar `null`.
+
+## 5. Casos de Teste por Tela
+
+### 5.1 LoginScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| LT01 | Abrir sem conta | Limpar storage e abrir app | Ver login sem card de retorno e sem botao biometrico. |
+| LT02 | Biometria sem conta | Abrir sem conta e tentar acesso biometrico se botao estiver disponivel | Alerta "Crie uma conta primeiro"; no estado atual o botao nao aparece sem usuario. |
+| LT03 | Login com senha correta | Criar conta, sair/reabrir, preencher email e senha iguais aos salvos | Navegar para Home. |
+| LT04 | Login com senha errada | Preencher email correto e senha errada | Alerta "Dados incorretos". |
+| LT05 | Login com email em caixa diferente | Cadastrar email com maiuscula e tentar login em minuscula | Deve permitir, mas o estado atual tende a falhar. |
+| LT06 | Biometria com conta salva | Abrir com usuario salvo e tocar "Entrar com biometria" | Autenticar e entrar na Home, ou exibir alerta especifico do sensor. |
+| LT07 | Toggle de senha | Tocar icone de olho no campo senha | Campo alterna entre texto visivel e seguro. |
+
+### 5.2 CadastroScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| CT01 | Cadastro completo | Preencher nome/email/senha, tirar foto e tocar "Criar conta" | Usuario salvo e app entra na Home. |
+| CT02 | Campos vazios | Tocar "Criar conta" sem preencher | Alerta "Preencha todos os campos". |
+| CT03 | Sem foto | Preencher campos sem foto e enviar | Alerta "Foto obrigatoria". |
+| CT04 | Email invalido | Usar email sem `@`, senha e foto validas | Deveria bloquear; estado atual permite. |
+| CT05 | Senha curta | Usar senha com menos de 6 caracteres | Deveria bloquear; estado atual permite. |
+| CT06 | Permissao de camera negada | Tocar avatar e negar permissao | Tela "Camera bloqueada" com botao "Permitir camera". |
+| CT07 | Refazer foto | Tirar foto, tocar "Tirar novamente" | Voltar para camera frontal. |
+
+### 5.3 HomeScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| HT01 | Lista inicial | Entrar na Home | Ver banner, categorias e restaurantes. |
+| HT02 | Filtro por categoria | Tocar chip "Burgers" | Mostrar somente restaurantes da categoria correspondente. |
+| HT03 | Desmarcar categoria | Tocar chip ativo novamente | Voltar lista completa. |
+| HT04 | Busca por restaurante | Digitar "Pizza" | Mostrar resultados correspondentes e esconder banner/categorias. |
+| HT05 | Busca sem resultado | Digitar termo inexistente | Ver empty state "Nenhum resultado". |
+| HT06 | Limpar busca | Tocar X no campo | Campo limpa e lista completa volta. |
+| HT07 | Navegar restaurante | Tocar card de restaurante | Ir para `RestauranteScreen`. |
+| HT08 | Abrir mapa | Tocar botao de mapa/header ou link "Ver no mapa" | Ir para `MapaScreen`. |
+| HT09 | Repetir pedido | Fazer pedido, voltar a Home e tocar FAB de repeat | Carrinho deve ser populado com ultimo pedido. |
+
+### 5.4 RestauranteScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| RT01 | Abrir cardapio | Navegar a partir da Home | Ver header do restaurante e lista de produtos. |
+| RT02 | Adicionar item | Tocar `+` em produto | Stepper mostra quantidade 1 e CTA aparece. |
+| RT03 | Incrementar item | Tocar `+` novamente | Quantidade e total aumentam. |
+| RT04 | Decrementar item | Tocar `-` | Quantidade diminui. |
+| RT05 | Remover ultimo item | Tocar `-` quando quantidade e 1 | Produto volta ao botao `+`; CTA some se carrinho zerar. |
+| RT06 | Multiplos itens | Adicionar produtos diferentes | CTA mostra quantidade total e soma correta. |
+| RT07 | Ver carrinho | Tocar CTA flutuante | Navegar para `CarrinhoScreen` com itens preservados. |
+| RT08 | Abrir sem params | Navegar para Restaurante sem `route.params.restaurante` | Estado atual retorna `null`; deveria mostrar fallback. |
+
+### 5.5 CarrinhoScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| CA01 | Visualizar carrinho | Abrir com itens | Ver itens, subtotal, entrega, cupom, endereco, pagamento e total. |
+| CA02 | Remover por swipe | Deslizar item para esquerda e tocar "Remover" | Item sai completamente do carrinho. |
+| CA03 | Cupom valido | Digitar `FOOME10` e aplicar | Mostrar 10% de desconto e total reduzido. |
+| CA04 | Cupom invalido | Digitar qualquer outro codigo | Mostrar mensagem de cupom invalido. |
+| CA05 | Entrega gratis | Usar restaurante com entrega "Gratis/Grátis" | Entrega deve ser R$ 0,00 e exibida como "Grátis". |
+| CA06 | Entrega paga | Usar restaurante com "R$ 5,00" | Total deve incluir taxa. |
+| CA07 | Confirmar com biometria | Tocar "Confirmar pedido" e autenticar | Pedido salvo, carrinho limpo, toast exibido e navegacao para Pedidos. |
+| CA08 | Cancelar biometria | Tocar confirmar e cancelar autenticacao | Overlay fecha e alerta informa que biometria e necessaria. |
+| CA09 | Carrinho vazio | Remover todos os itens | Empty state visivel e botao confirmar desabilitado. |
+
+### 5.6 PedidosScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| PT01 | Sem pedidos | Abrir tela sem pedidos salvos | Empty state com botao "Explorar restaurantes". |
+| PT02 | Lista de pedidos | Confirmar pedido e abrir tela | Card aparece com restaurante, itens, data, total e status. |
+| PT03 | Avanco de status | Manter tela aberta por 30s | Status avanca ate "Entregue". |
+| PT04 | Modal de avaliacao | Aguardar pedido chegar em entregue | Modal abre para nota/comentario. |
+| PT05 | Enviar sem nota | Tocar "Enviar avaliacao" sem estrela | Alerta pedindo nota. |
+| PT06 | Enviar avaliacao | Selecionar estrela e enviar | Avaliacao salva e alerta de agradecimento aparece. |
+| PT07 | Detalhe do pedido | Tocar no card do pedido | Deveria abrir detalhes/timeline; estado atual nao faz nada. |
+
+### 5.7 MapaScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| MT01 | Abrir mapa | Navegar a partir da Home | Ver Vassouras/RJ e markers dos restaurantes. |
+| MT02 | Permissao negada | Negar localizacao | Mapa continua em Vassouras sem travar. |
+| MT03 | Permissao concedida | Permitir localizacao | Deve mostrar ponto do usuario; estado atual nao centraliza automaticamente. |
+| MT04 | Selecionar marker | Tocar marker | Bottom sheet sobe com dados do restaurante. |
+| MT05 | Fechar sheet | Tocar no mapa fora do sheet | Bottom sheet fecha. |
+| MT06 | Ver cardapio | Tocar "Ver cardapio" | Navegar para `RestauranteScreen`. |
+| MT07 | Filtro de categoria | Procurar botao de filtro | Estado atual nao implementa filtro no mapa. |
+| MT08 | Recenter | Procurar botao de localizacao | Estado atual nao implementa botao de recenter. |
+
+### 5.8 PerfilScreen
+
+| ID | Caso de teste | Passos | Resultado esperado |
+|---|---|---|---|
+| PF01 | Abrir perfil | Tocar avatar na Home | Estado atual mostra apenas "Perfil" e "Em breve...". |
+| PF02 | Ver dados do usuario | Procurar nome/email/foto | Nao implementado. |
+| PF03 | Alternar dark mode | Procurar toggle de tema | Nao implementado na UI. |
+| PF04 | Alterar senha | Procurar acao de senha | Nao implementado. |
+| PF05 | Sair da conta | Procurar logout | Nao implementado. |
