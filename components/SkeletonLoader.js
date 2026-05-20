@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
-import { ANIM, C, RADIUS } from '../constants/theme';
+import { C, R } from '../constants/theme';
 
 export default function SkeletonLoader({
   width = '100%',
   height = 20,
-  borderRadius = RADIUS.sm,
+  borderRadius = R.md,
   style,
 }) {
   const shimmer = useRef(new Animated.Value(0)).current;
@@ -15,12 +15,12 @@ export default function SkeletonLoader({
       Animated.sequence([
         Animated.timing(shimmer, {
           toValue: 1,
-          duration: ANIM.slow + ANIM.normal,
+          duration: 800,
           useNativeDriver: true,
         }),
         Animated.timing(shimmer, {
           toValue: 0,
-          duration: ANIM.slow + ANIM.normal,
+          duration: 800,
           useNativeDriver: true,
         }),
       ])
@@ -32,7 +32,7 @@ export default function SkeletonLoader({
 
   const opacity = shimmer.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.25, 0.55],
+    outputRange: [0.3, 0.7],
   });
 
   return (
@@ -42,7 +42,7 @@ export default function SkeletonLoader({
           width,
           height,
           borderRadius,
-          backgroundColor: C.border,
+          backgroundColor: C.surfaceAlt,
           opacity,
         },
         style,

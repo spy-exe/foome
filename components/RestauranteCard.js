@@ -1,13 +1,22 @@
-import React, { useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
-import { C, F, SHADOW } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Star, Clock, ChefHat, Truck } from 'lucide-react-native';
+import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
+import { ICON_SIZE } from '../constants/icons';
 import { haptic } from '../utils/haptics';
 
-export default function RestauranteCard({ restaurante, onPress }) {
+const ICON_MAP = {
+  '🍔': ChefHat, '🍕': ChefHat, '🍣': ChefHat,
+  '🌮': ChefHat, '🥗': ChefHat, '🍝': ChefHat,
+  '🥩': ChefHat, '🫐': ChefHat,
+};
+
+const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) {
   const gratis  = restaurante.entrega === 'Grátis';
   const popular = restaurante.avaliacao >= 4.8;
   const scale = useRef(new Animated.Value(1)).current;
+  const CatIcon = ICON_MAP[restaurante.emoji] || ChefHat;
 
   function pressIn() {
     Animated.timing(scale, {
@@ -36,85 +45,88 @@ export default function RestauranteCard({ restaurante, onPress }) {
           onPress?.();
         }}
       >
-
-      {/* ── Topo colorido com emoji ── */}
-      <View style={[s.topo, { backgroundColor: restaurante.cor + '1A' }]}>
-        <Text style={s.emoji}>{restaurante.emoji}</Text>
-        {popular && (
-          <View style={[s.badge, { backgroundColor: restaurante.cor }]}>
-            <Ionicons name="star" size={9} color="#fff" />
-            <Text style={s.badgeTxt}> Popular</Text>
+        {/* ── Topo com gradiente midnight → categoria ── */}
+        <LinearGradient
+          colors={[C.midnight, restaurante.cor + 'CC']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.topo}
+        >
+          <View style={[s.iconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <CatIcon size={36} color={C.white} />
           </View>
-        )}
-        <View style={[s.corTag, { backgroundColor: restaurante.cor }]} />
-      </View>
 
-      {/* ── Corpo ── */}
-      <View style={s.corpo}>
-        <View style={s.nomeRow}>
-          <Text style={s.nome} numberOfLines={1}>{restaurante.nome}</Text>
-          <View style={s.ratingPill}>
-            <Ionicons name="star" size={11} color={C.amber} />
-            <Text style={s.ratingTxt}> {restaurante.avaliacao}</Text>
+          {popular && (
+            <View style={s.badge}>
+              <Text style={s.badgeTxt}>POPULAR</Text>
+            </View>
+          )}
+        </LinearGradient>
+
+        {/* ── Corpo ── */}
+        <View style={s.corpo}>
+          <View style={s.nomeRow}>
+            <Text style={s.nome} numberOfLines={1}>{restaurante.nome}</Text>
+            <View style={s.ratingPill}>
+              <Star size={12} color={C.warning} fill={C.warning} />
+              <Text style={s.ratingTxt}> {restaurante.avaliacao}</Text>
+            </View>
+          </View>
+
+          <Text style={s.cat}>{restaurante.categoria}</Text>
+
+          <View style={s.metaRow}>
+            <Clock size={12} color={C.inkLight} />
+            <Text style={s.metaTxt}> {restaurante.tempo}</Text>
+            <View style={s.dot} />
+            <Truck size={12} color={gratis ? C.success : C.inkLight} />
+            <Text style={[s.metaTxt, gratis && s.gratis]}>
+              {' '}{gratis ? 'Frete grátis' : restaurante.entrega}
+            </Text>
           </View>
         </View>
-
-        <Text style={s.cat}>{restaurante.categoria}</Text>
-
-        <View style={s.metaRow}>
-          <Feather name="clock" size={11} color={C.ink3} />
-          <Text style={s.metaTxt}> {restaurante.tempo}</Text>
-          <View style={s.dot} />
-          <Text style={[s.metaTxt, gratis && s.gratis]}>
-            {gratis ? 'Frete grátis' : restaurante.entrega}
-          </Text>
-          <View style={{ flex: 1 }} />
-          <View style={[s.arrow, { backgroundColor: restaurante.cor + '18' }]}>
-            <Feather name="chevron-right" size={14} color={restaurante.cor} />
-          </View>
-        </View>
-      </View>
-
       </TouchableOpacity>
     </Animated.View>
   );
-}
+});
 
 const s = StyleSheet.create({
   card: {
     backgroundColor: C.surface,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 20,
+    marginHorizontal: S.lg,
+    marginBottom: S.md,
+    borderRadius: R.xl,
     overflow: 'hidden',
     ...SHADOW.card,
   },
 
   topo: {
-    height: 88,
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emoji: { fontSize: 46 },
+  iconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: R.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
   badge: {
     position: 'absolute',
     top: 10, right: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: C.brand,
+    borderRadius: R.full,
+    paddingHorizontal: S.sm,
+    paddingVertical: S.xs - 1,
   },
-  badgeTxt: { fontFamily: F.bold, fontSize: 10, color: '#fff' },
-
-  corTag: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: 3,
+  badgeTxt: {
+    ...TYPE.badge,
+    color: C.white,
   },
 
-  corpo: { padding: 14 },
+  corpo: { padding: S.lg },
 
   nomeRow: {
     flexDirection: 'row',
@@ -123,39 +135,33 @@ const s = StyleSheet.create({
     marginBottom: 3,
   },
   nome: {
-    fontFamily: F.headingSm,
-    fontSize: 16,
-    color: C.ink,
-    letterSpacing: -0.2,
+    ...TYPE.h4,
     flex: 1,
   },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.amberLight,
-    borderRadius: 8,
+    backgroundColor: C.warningLight,
+    borderRadius: R.sm,
     paddingHorizontal: 7,
     paddingVertical: 3,
     marginLeft: 8,
   },
-  ratingTxt: { fontFamily: F.bold, fontSize: 12, color: '#92530A' },
+  ratingTxt: {
+    ...TYPE.rating,
+    color: C.ink,
+  },
 
   cat: {
-    fontFamily: F.regular,
-    fontSize: 12,
-    color: C.ink3,
+    ...TYPE.caption,
+    color: C.inkLight,
     marginBottom: 10,
   },
 
   metaRow: { flexDirection: 'row', alignItems: 'center' },
-  metaTxt: { fontFamily: F.medium, fontSize: 12, color: C.ink2 },
-  dot:     { width: 3, height: 3, borderRadius: 2, backgroundColor: C.ink4, marginHorizontal: 6 },
-  gratis:  { color: C.teal },
-
-  arrow: {
-    width: 30, height: 30,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  metaTxt: { fontFamily: F.mono, fontSize: 13, color: C.inkMid },
+  dot:     { width: 3, height: 3, borderRadius: 2, backgroundColor: C.border, marginHorizontal: 6 },
+  gratis:  { color: C.success },
 });
+
+export default RestauranteCard;

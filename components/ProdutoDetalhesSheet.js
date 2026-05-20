@@ -10,9 +10,10 @@ import {
   KeyboardAvoidingView,
   Animated as RNAnimated,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { X } from 'lucide-react-native';
 import { formatarPreco } from '../services/dados';
-import { C, F, SHADOW } from '../constants/theme';
+import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
+import { ICON_SIZE } from '../constants/icons';
 import PrimaryButton from './PrimaryButton';
 import { haptic } from '../utils/haptics';
 
@@ -89,7 +90,7 @@ function BottomSheetSimples({ visible, onClose, onDismiss, children }) {
             hitSlop={8}
             onPress={onClose}
           >
-            <Feather name="x" size={18} color={C.ink2} />
+            <X size={ICON_SIZE.sm} color={C.inkMid} />
           </TouchableOpacity>
           {children}
         </RNAnimated.View>
@@ -143,7 +144,7 @@ export default function ProdutoDetalhesSheet({
         <TextInput
           style={s.obsInput}
           placeholder="Ex: sem cebola, molho à parte..."
-          placeholderTextColor={C.ink4}
+          placeholderTextColor={C.inkLight}
           multiline
           value={observacoes}
           onChangeText={onObservacoesChange}
@@ -171,9 +172,9 @@ const s = StyleSheet.create({
   },
   sheet: {
     backgroundColor: C.surface,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: R.xxl,
+    borderTopRightRadius: R.xxl,
+    paddingHorizontal: S.xl,
     paddingTop: 10,
     paddingBottom: Platform.OS === 'ios' ? 34 : 22,
     maxHeight: '84%',
@@ -194,7 +195,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: C.bg,
+    backgroundColor: C.offWhite,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -205,53 +206,53 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   sheetNome: {
-    fontFamily: F.headingLg,
+    fontFamily: F.uiBold,
     fontSize: 21,
     color: C.ink,
     letterSpacing: 0,
     textAlign: 'center',
   },
   sheetDesc: {
-    fontFamily: F.regular,
+    fontFamily: F.body,
     fontSize: 13,
-    color: C.ink2,
+    color: C.inkMid,
     lineHeight: 19,
     textAlign: 'center',
     marginBottom: 4,
   },
   sheetSection: {
-    fontFamily: F.headingSm,
+    fontFamily: F.uiSemi,
     fontSize: 14,
     color: C.ink,
-    marginTop: 8,
+    marginTop: S.sm,
   },
-  tamanhoRow: { flexDirection: 'row', gap: 8 },
+  tamanhoRow: { flexDirection: 'row', gap: S.sm },
   tamanhoBtn: {
     flex: 1,
     height: 44,
-    borderRadius: 14,
+    borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: C.bg,
+    backgroundColor: C.offWhite,
   },
   tamanhoTxt: {
-    fontFamily: F.bold,
+    fontFamily: F.uiSemi,
     fontSize: 14,
-    color: C.ink2,
+    color: C.inkMid,
   },
   obsInput: {
     minHeight: 92,
-    borderRadius: 16,
+    borderRadius: R.lg,
     borderWidth: 1,
     borderColor: C.border,
-    backgroundColor: C.bg,
-    padding: 14,
-    fontFamily: F.regular,
+    backgroundColor: C.offWhite,
+    padding: S.lg,
+    fontFamily: F.body,
     fontSize: 14,
     color: C.ink,
     textAlignVertical: 'top',
   },
-  sheetCta: { marginTop: 8 },
+  sheetCta: { marginTop: S.sm },
 });

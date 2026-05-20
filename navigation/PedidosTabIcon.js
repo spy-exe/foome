@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ShoppingBag } from 'lucide-react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,7 +11,7 @@ import Animated, {
 import { C, F } from '../constants/theme';
 import { usePedidosCount } from '../contexts/AppContext';
 
-export default function PedidosTabIcon({ color, focused, size }) {
+export default function PedidosTabIcon({ color, focused }) {
   const count = usePedidosCount();
   const scale = useSharedValue(1);
 
@@ -30,7 +30,7 @@ export default function PedidosTabIcon({ color, focused, size }) {
 
   return (
     <View style={s.wrap}>
-      <Ionicons name={focused ? 'receipt' : 'receipt-outline'} size={size} color={color} />
+      <ShoppingBag size={22} color={color} fill={focused ? color : 'transparent'} />
       {count > 0 && (
         <Animated.View style={[s.badge, badgeStyle]}>
           <Text style={s.badgeTxt}>{count > 99 ? '99+' : count}</Text>
@@ -58,11 +58,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.brand,
     borderWidth: 2,
-    borderColor: C.surface,
+    borderColor: C.midnight,
     paddingHorizontal: 4,
   },
   badgeTxt: {
-    fontFamily: F.bold,
+    fontFamily: F.monoBold,
     fontSize: 9,
     lineHeight: 12,
     color: '#fff',

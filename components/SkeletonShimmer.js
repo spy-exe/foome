@@ -15,7 +15,7 @@ export default function SkeletonShimmer({ style }) {
 
   useEffect(() => {
     progress.value = withRepeat(
-      withTiming(1, { duration: 1150, easing: Easing.inOut(Easing.ease) }),
+      withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
       -1,
       false,
     );
@@ -35,14 +35,14 @@ export default function SkeletonShimmer({ style }) {
 const s = StyleSheet.create({
   base: {
     overflow: 'hidden',
-    backgroundColor: C.border,
+    backgroundColor: C.surfaceAlt,
   },
   shimmer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 86,
-    backgroundColor: 'rgba(255,255,255,0.46)',
+    backgroundColor: C.midnightLight,
     transform: [{ rotate: '12deg' }],
   },
 });

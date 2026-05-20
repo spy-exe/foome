@@ -1,10 +1,18 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { C, F, SHADOW } from '../constants/theme';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { C, F, R } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 
-export default function PrimaryButton({ label, onPress, color, disabled, loading, style, leftIcon }) {
-  const bg = color ?? C.brand;
+export default function PrimaryButton({
+  label, onPress, color, variant = 'brand',
+  disabled, loading, style, leftIcon,
+}) {
+  const bg = variant === 'midnight' ? C.midnight
+    : variant === 'outline' ? 'transparent'
+    : color ?? C.brand;
+  const txtColor = variant === 'outline' ? C.midnight : C.white;
+  const borderColor = variant === 'outline' ? C.midnight : 'transparent';
+
   const handlePress = () => {
     if (disabled || loading) return;
     haptic.light();
@@ -13,17 +21,23 @@ export default function PrimaryButton({ label, onPress, color, disabled, loading
 
   return (
     <TouchableOpacity
-      style={[s.btn, { backgroundColor: bg, shadowColor: bg }, (disabled || loading) && s.off, style]}
+      style={[
+        s.btn,
+        { backgroundColor: bg, borderColor },
+        variant === 'brand' && { shadowColor: bg },
+        (disabled || loading) && s.off,
+        style,
+      ]}
       onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+        <ActivityIndicator color={txtColor} style={{ marginRight: 8 }} />
       ) : leftIcon ? (
-        <View style={{ marginRight: 8 }}>{leftIcon}</View>
+        leftIcon
       ) : null}
-      <Text style={s.txt}>{loading ? 'Aguarde...' : label}</Text>
+      <Text style={[s.txt, { color: txtColor }]}>{loading ? 'Aguarde...' : label}</Text>
     </TouchableOpacity>
   );
 }
@@ -31,13 +45,17 @@ export default function PrimaryButton({ label, onPress, color, disabled, loading
 const s = StyleSheet.create({
   btn: {
     flexDirection: 'row',
-    borderRadius: 16,
-    height: 54,
+    borderRadius: R.lg,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOW.float,
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.32,
+    shadowRadius: 16,
+    elevation: 8,
+    gap: 8,
   },
-  txt: { fontFamily: F.heading, fontSize: 16, color: '#fff' },
-  off: { opacity: 0.55 },
+  txt: { fontFamily: F.uiSemi, fontSize: 16 },
+  off: { opacity: 0.5 },
 });

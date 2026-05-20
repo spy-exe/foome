@@ -6,8 +6,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
-import { F } from '../constants/theme';
+import { Plus, Minus } from 'lucide-react-native';
+import { C, F, R } from '../constants/theme';
+import { ICON_SIZE } from '../constants/icons';
 
 export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
   const slideY = useSharedValue(0);
@@ -35,30 +36,30 @@ export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
   if (quantidade === 0) {
     return (
       <TouchableOpacity
-        style={[s.addBtn, { backgroundColor: cor }]}
+        style={[s.addBtn, { backgroundColor: C.brand }]}
         onPress={onAdicionar}
       >
-        <Feather name="plus" size={18} color="#fff" />
+        <Plus size={ICON_SIZE.sm} color={C.white} />
       </TouchableOpacity>
     );
   }
 
   return (
-    <View style={s.row}>
+    <View style={[s.row, { backgroundColor: C.midnight }]}>
       <TouchableOpacity
-        style={[s.stepBtn, { borderColor: cor }]}
+        style={s.stepBtn}
         onPress={onRemover}
       >
-        <Feather name="minus" size={14} color={cor} />
+        <Minus size={14} color={C.white} />
       </TouchableOpacity>
-      <Animated.Text style={[s.count, { color: cor }, countStyle]}>
+      <Animated.Text style={[s.count, countStyle]}>
         {quantidade}
       </Animated.Text>
       <TouchableOpacity
-        style={[s.stepBtn, { backgroundColor: cor, borderColor: cor }]}
+        style={s.stepBtn}
         onPress={onAdicionar}
       >
-        <Feather name="plus" size={14} color="#fff" />
+        <Plus size={14} color={C.white} />
       </TouchableOpacity>
     </View>
   );
@@ -67,21 +68,28 @@ export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
 const s = StyleSheet.create({
   addBtn: {
     width: 36, height: 36,
-    borderRadius: 11,
+    borderRadius: R.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: R.full,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
   stepBtn: {
     width: 32, height: 32,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: R.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
   count: {
-    fontFamily: F.bold,
-    fontSize: 15,
+    fontFamily: F.monoBold,
+    fontSize: 14,
+    color: C.white,
     minWidth: 20,
     textAlign: 'center',
   },

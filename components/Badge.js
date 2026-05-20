@@ -6,7 +6,7 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import { C, F, RADIUS, SPACING } from '../constants/theme';
+import { C, F, R, S } from '../constants/theme';
 
 export default function Badge({ value = 0, cor = C.brand, max = 99 }) {
   const scale = useSharedValue(1);
@@ -39,14 +39,14 @@ const s = StyleSheet.create({
   badge: {
     minWidth: 20,
     height: 20,
-    borderRadius: RADIUS.full,
+    borderRadius: R.full,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xs + 1,
+    paddingHorizontal: S.xs + 1,
   },
   txt: {
-    fontFamily: F.bold,
-    fontSize: 10,
+    fontFamily: F.monoBold,
+    fontSize: 11,
     color: '#fff',
   },
 });

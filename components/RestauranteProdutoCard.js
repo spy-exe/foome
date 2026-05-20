@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
@@ -8,11 +8,11 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { formatarPreco } from '../services/dados';
-import { C, F, SHADOW } from '../constants/theme';
+import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
 import Stepper from './Stepper';
 import { haptic } from '../utils/haptics';
 
-export default function RestauranteProdutoCard({
+const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
   item,
   cor,
   quantidade,
@@ -83,24 +83,24 @@ export default function RestauranteProdutoCard({
       />
     </View>
   );
-}
+});
 
 const s = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: C.surface,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: R.lg,
+    padding: S.lg,
     marginBottom: 10,
-    gap: 12,
+    gap: S.md,
     ...SHADOW.card,
   },
   cardPressArea: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: S.md,
   },
   prodImg: {
     width: 52,
@@ -111,7 +111,9 @@ const s = StyleSheet.create({
   },
   prodEmoji: { fontSize: 34 },
   prodInfo: { flex: 1 },
-  prodNome: { fontFamily: F.headingSm, fontSize: 15, color: C.ink, letterSpacing: 0 },
-  prodDesc: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 3, lineHeight: 17 },
-  prodPreco: { fontFamily: F.bold, fontSize: 16, marginTop: 6 },
+  prodNome: { fontFamily: F.uiSemi, fontSize: 15, color: C.ink, letterSpacing: 0 },
+  prodDesc: { fontFamily: F.body, fontSize: 12, color: C.inkLight, marginTop: 3, lineHeight: 17 },
+  prodPreco: { ...TYPE.priceS, marginTop: 6 },
 });
+
+export default RestauranteProdutoCard;

@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { C, F } from '../constants/theme';
+import { C, F, R, S } from '../constants/theme';
 
-export default function InputField({ icon, rightElement, erro, style, ...props }) {
+export default function InputField({ icon, rightElement, erro, label, style, ...props }) {
+  const [focado, setFocado] = useState(false);
+
   return (
     <View style={s.container}>
-      <View style={[s.wrap, erro && s.wrapErro, style]}>
-        {icon && <View style={s.iconSlot}>{icon}</View>}
+      {label ? <Text style={s.label}>{label}</Text> : null}
+      <View style={[
+        s.wrap,
+        focado && !erro && s.wrapFocus,
+        erro && s.wrapErro,
+        style,
+      ]}>
+        {icon && <View style={{ marginRight: S.sm }}>{icon}</View>}
         <TextInput
           style={s.input}
-          placeholderTextColor={C.ink4}
+          placeholderTextColor={C.inkLight}
+          onFocus={() => setFocado(true)}
+          onBlur={() => setFocado(false)}
           {...props}
         />
         {rightElement || null}
@@ -21,33 +31,42 @@ export default function InputField({ icon, rightElement, erro, style, ...props }
 
 const s = StyleSheet.create({
   container: { width: '100%' },
+  label: {
+    fontFamily: F.uiMedium,
+    fontSize: 13,
+    color: C.inkMid,
+    marginBottom: 6,
+  },
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.bg,
-    borderRadius: 14,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
-    paddingHorizontal: 14,
+    paddingHorizontal: S.md,
     height: 52,
   },
-  wrapErro: {
-    borderColor: C.brand,
+  wrapFocus: {
+    borderColor: C.midnight,
     borderWidth: 1.5,
   },
-  iconSlot: { marginRight: 10 },
+  wrapErro: {
+    borderColor: C.error,
+    borderWidth: 1.5,
+  },
   input: {
     flex: 1,
-    fontFamily: F.regular,
+    fontFamily: F.body,
     fontSize: 15,
     color: C.ink,
     paddingVertical: 0,
   },
   erroTxt: {
-    fontFamily: F.medium,
-    fontSize: 11,
-    color: C.brand,
-    marginTop: 4,
-    marginLeft: 4,
+    fontFamily: F.uiMedium,
+    fontSize: 12,
+    color: C.error,
+    marginTop: S.xs,
+    marginLeft: S.xs,
   },
 });

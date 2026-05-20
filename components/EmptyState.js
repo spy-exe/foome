@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { C, F, RADIUS, SPACING } from '../constants/theme';
+import { Package } from 'lucide-react-native';
+import { C, F, R, S } from '../constants/theme';
+import { ICON_SIZE, ICON_COLOR_DEFAULT } from '../constants/icons';
 import PrimaryButton from './PrimaryButton';
 
 export default function EmptyState({
-  icon = 'inbox',
+  icon: Icon = Package,
   titulo,
   subtitulo,
   ctaLabel,
@@ -14,12 +15,12 @@ export default function EmptyState({
   return (
     <View style={s.wrap}>
       <View style={s.iconWrap}>
-        <Feather name={icon} size={36} color={C.ink4} />
+        <Icon size={ICON_SIZE.xl} color={ICON_COLOR_DEFAULT} />
       </View>
       <Text style={s.titulo}>{titulo}</Text>
       {subtitulo ? <Text style={s.sub}>{subtitulo}</Text> : null}
       {ctaLabel ? (
-        <PrimaryButton label={ctaLabel} onPress={onCtaPress} style={s.cta} />
+        <PrimaryButton label={ctaLabel} onPress={onCtaPress} variant="outline" style={s.cta} />
       ) : null}
     </View>
   );
@@ -28,35 +29,35 @@ export default function EmptyState({
 const s = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    paddingVertical: SPACING.xxl,
-    paddingHorizontal: SPACING.xl,
+    paddingVertical: S.xxl,
+    paddingHorizontal: S.xl,
   },
   iconWrap: {
     width: 80,
     height: 80,
-    borderRadius: RADIUS.lg,
-    backgroundColor: C.bg,
+    borderRadius: R.lg,
+    backgroundColor: C.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: S.lg,
     borderWidth: 1,
     borderColor: C.border,
   },
   titulo: {
-    fontFamily: F.heading,
-    fontSize: 17,
+    fontFamily: F.uiSemi,
+    fontSize: 18,
     color: C.ink,
-    marginBottom: SPACING.sm,
+    marginBottom: S.sm,
     textAlign: 'center',
   },
   sub: {
-    fontFamily: F.regular,
+    fontFamily: F.body,
     fontSize: 14,
-    color: C.ink3,
+    color: C.inkLight,
     textAlign: 'center',
     lineHeight: 20,
   },
   cta: {
-    marginTop: SPACING.lg,
+    marginTop: S.lg,
   },
 });

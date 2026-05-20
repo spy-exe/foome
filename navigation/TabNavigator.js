@@ -1,44 +1,40 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Home, Compass, ShoppingBag, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { C, F } from '../constants/theme';
 import HomeStack from './HomeStack';
 import PedidosTabIcon from './PedidosTabIcon';
 import MapaScreen from '../screens/MapaScreen';
 import PedidosScreen from '../screens/PedidosScreen';
-import PerfilScreen from '../screens/PerfilScreen';
+import PerfilStack from './PerfilStack';
 
 const Tab = createBottomTabNavigator();
 
-function TabIcon({ color, focused, name, outlineName, size }) {
-  return (
-    <Ionicons
-      name={focused ? name : outlineName}
-      size={size}
-      color={color}
-    />
-  );
+function TabIcon({ icon: Icon, color, focused }) {
+  return <Icon size={22} color={color} fill={focused ? color : 'transparent'} />;
 }
 
 export default function TabNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: C.brand,
-        tabBarInactiveTintColor: C.ink3,
+        tabBarInactiveTintColor: C.midnightLight,
         tabBarStyle: {
-          backgroundColor: C.surface,
-          borderTopColor: C.border,
-          borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          backgroundColor: C.midnight,
+          borderTopWidth: 0,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 4,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
         },
         tabBarLabelStyle: {
-          fontFamily: F.medium,
+          fontFamily: F.ui,
           fontSize: 11,
           marginTop: 2,
         },
@@ -49,8 +45,8 @@ export default function TabNavigator() {
         component={HomeStack}
         options={{
           tabBarLabel: 'Início',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon color={color} focused={focused} name="home" outlineName="home-outline" size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={Home} color={color} focused={focused} />
           ),
         }}
       />
@@ -59,8 +55,8 @@ export default function TabNavigator() {
         component={MapaScreen}
         options={{
           tabBarLabel: 'Mapa',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon color={color} focused={focused} name="map" outlineName="map-outline" size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={Compass} color={color} focused={focused} />
           ),
         }}
       />
@@ -69,18 +65,18 @@ export default function TabNavigator() {
         component={PedidosScreen}
         options={{
           tabBarLabel: 'Pedidos',
-          tabBarIcon: ({ color, focused, size }) => (
-            <PedidosTabIcon color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <PedidosTabIcon color={color} focused={focused} />
           ),
         }}
       />
       <Tab.Screen
         name="PerfilTab"
-        component={PerfilScreen}
+        component={PerfilStack}
         options={{
           tabBarLabel: 'Perfil',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon color={color} focused={focused} name="person" outlineName="person-outline" size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={User} color={color} focused={focused} />
           ),
         }}
       />

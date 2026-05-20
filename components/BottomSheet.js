@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ANIM, C, RADIUS, SHADOW, SPACING } from '../constants/theme';
+import { C, R, SHADOW, S } from '../constants/theme';
 
 export default function BottomSheet({
   visivel,
@@ -27,7 +27,7 @@ export default function BottomSheet({
     } else {
       Animated.timing(translateY, {
         toValue: altura,
-        duration: ANIM.fast + 20,
+        duration: 220,
         useNativeDriver: true,
       }).start();
     }
@@ -68,18 +68,18 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: C.surface,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    paddingBottom: Platform.OS === 'ios' ? 42 : SPACING.xl,
+    borderTopLeftRadius: R.xxl,
+    borderTopRightRadius: R.xxl,
+    padding: S.xl,
+    paddingBottom: Platform.OS === 'ios' ? 42 : S.xl,
     ...SHADOW.sheet,
   },
   handle: {
     width: 44,
     height: 4,
-    borderRadius: RADIUS.full,
+    borderRadius: R.full,
     backgroundColor: C.border,
     alignSelf: 'center',
-    marginBottom: SPACING.lg + 2,
+    marginBottom: S.lg + 2,
   },
 });

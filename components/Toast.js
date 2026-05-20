@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { C, F } from '../constants/theme';
+import { CheckCircle2, AlertCircle, Bell, X } from 'lucide-react-native';
+import { C, F, R, S } from '../constants/theme';
+import { ICON_SIZE } from '../constants/icons';
 
 const CONFIG = {
-  sucesso: { bg: C.tealLight, icon: 'check-circle', color: C.teal },
-  erro: { bg: C.brandLight, icon: 'alert-circle', color: C.brand },
-  info: { bg: C.bg, icon: 'info', color: C.ink },
+  sucesso: { bg: C.success, icon: CheckCircle2 },
+  erro: { bg: C.error, icon: AlertCircle },
+  info: { bg: C.info, icon: Bell },
 };
 
 export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000, onClose }) {
@@ -51,6 +52,7 @@ export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000
   if (!visivel) return null;
 
   const cfg = CONFIG[tipo] ?? CONFIG.info;
+  const Icon = cfg.icon;
 
   return (
     <Animated.View
@@ -63,12 +65,12 @@ export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000
         },
       ]}
     >
-      <Feather name={cfg.icon} size={18} color={cfg.color} />
-      <Text style={[s.txt, { color: cfg.color }]} numberOfLines={2}>
+      <Icon size={ICON_SIZE.md} color={C.white} />
+      <Text style={s.txt} numberOfLines={2}>
         {mensagem}
       </Text>
       <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Feather name="x" size={16} color={cfg.color} />
+        <X size={ICON_SIZE.sm} color={C.white} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -84,19 +86,20 @@ const s = StyleSheet.create({
     elevation: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    gap: S.sm,
+    borderRadius: R.lg,
+    paddingHorizontal: S.lg,
+    paddingVertical: S.md,
+    shadowColor: '#0A0A0A',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
   },
   txt: {
     flex: 1,
-    fontFamily: F.medium,
-    fontSize: 13,
-    lineHeight: 18,
+    fontFamily: F.uiMedium,
+    fontSize: 14,
+    color: C.white,
+    lineHeight: 20,
   },
 });

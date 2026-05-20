@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { C, F } from '../constants/theme';
+import { C, F, R, S } from '../constants/theme';
 
 export default function SubcategoriaTabs({ tabs, atual, onChange, cor }) {
   return (
@@ -35,23 +35,23 @@ export default function SubcategoriaTabs({ tabs, atual, onChange, cor }) {
 
 const s = StyleSheet.create({
   subTabBar: {
-    backgroundColor: C.bg,
-    paddingBottom: 12,
+    backgroundColor: C.offWhite,
+    paddingBottom: S.md,
     marginBottom: 4,
   },
-  subTabRow: { gap: 8, paddingRight: 4 },
+  subTabRow: { gap: S.sm, paddingRight: 4 },
   subTab: {
     minWidth: 92,
     height: 40,
-    borderRadius: 14,
+    borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.surface,
-    paddingHorizontal: 14,
+    paddingHorizontal: S.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  subTabTxt: { fontFamily: F.semibold, fontSize: 13, color: C.ink2 },
+  subTabTxt: { fontFamily: F.uiSemi, fontSize: 13, color: C.inkMid },
   subTabLine: {
     position: 'absolute',
     left: 18,

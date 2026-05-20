@@ -1,17 +1,14 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { C, F, RADIUS } from '../constants/theme';
+import { User } from 'lucide-react-native';
+import { C, F, R } from '../constants/theme';
+import { ICON_SIZE } from '../constants/icons';
 
-const SIZES = {
-  S: 36,
-  M: 48,
-  L: 72,
-};
+const SIZES = { sm: 32, md: 44, lg: 64, xl: 80 };
 
-export default function Avatar({ uri, nome = '', tamanho = 'M' }) {
-  const size = SIZES[tamanho] ?? SIZES.M;
-  const fontSize = size >= SIZES.L ? 24 : size >= SIZES.M ? 18 : 14;
+export default function Avatar({ uri, nome = '', tamanho = 'md' }) {
+  const size = SIZES[tamanho] ?? SIZES.md;
+  const fontSize = size >= SIZES.lg ? 24 : size >= SIZES.md ? 18 : 12;
   const iniciais = nome
     .split(' ')
     .map((parte) => parte[0])
@@ -19,11 +16,11 @@ export default function Avatar({ uri, nome = '', tamanho = 'M' }) {
     .slice(0, 2)
     .join('')
     .toUpperCase();
-  const borderWidth = size >= SIZES.L ? 3 : 2;
+  const borderWidth = size >= SIZES.lg ? 3 : 2;
   const sizeStyle = {
     width: size,
     height: size,
-    borderRadius: RADIUS.full,
+    borderRadius: R.full,
     borderWidth,
   };
 
@@ -41,23 +38,21 @@ export default function Avatar({ uri, nome = '', tamanho = 'M' }) {
       {iniciais ? (
         <Text style={[s.iniciais, { fontSize }]}>{iniciais}</Text>
       ) : (
-        <Feather name="user" size={fontSize} color={C.ink3} />
+        <User size={size * 0.4} color={C.inkLight} />
       )}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  img: {
-    overflow: 'hidden',
-  },
+  img: { overflow: 'hidden' },
   fallback: {
-    backgroundColor: C.bg,
+    backgroundColor: C.midnight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iniciais: {
-    fontFamily: F.headingSm,
-    color: C.ink2,
+    fontFamily: F.uiBold,
+    color: C.offWhite,
   },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { C, F, SPACING } from '../constants/theme';
+import { Star } from 'lucide-react-native';
+import { C, F, S } from '../constants/theme';
 
 export default function RatingStars({
   valor = 0,
@@ -15,19 +15,24 @@ export default function RatingStars({
   const stars = [];
 
   for (let i = 1; i <= safeMax; i += 1) {
-    if (clampedValue >= i) {
-      stars.push(<Ionicons key={i} name="star" size={tamanho} color={C.amber} />);
-    } else if (clampedValue >= i - 0.5) {
-      stars.push(<Ionicons key={i} name="star-half" size={tamanho} color={C.amber} />);
-    } else {
-      stars.push(<Ionicons key={i} name="star-outline" size={tamanho} color={C.ink4} />);
-    }
+    const filled = clampedValue >= i;
+    const half = !filled && clampedValue >= i - 0.5;
+    stars.push(
+      <Star
+        key={i}
+        size={tamanho}
+        color={C.warning}
+        fill={filled || half ? C.warning : 'transparent'}
+      />
+    );
   }
 
   return (
     <View style={s.row}>
       <View style={s.stars}>{stars}</View>
-      {mostrarValor ? <Text style={s.txt}>{clampedValue.toFixed(1)}</Text> : null}
+      {mostrarValor ? (
+        <Text style={s.txt}>{clampedValue.toFixed(1)}</Text>
+      ) : null}
     </View>
   );
 }
@@ -36,16 +41,16 @@ const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: S.xs,
   },
   stars: {
     flexDirection: 'row',
     gap: 2,
   },
   txt: {
-    fontFamily: F.bold,
+    fontFamily: F.monoMedium,
     fontSize: 13,
-    color: '#92530A',
+    color: C.ink,
     marginLeft: 2,
   },
 });
