@@ -14,19 +14,53 @@ const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04
 
 export default function MapaScreen({ navigation, route }) {
   const usuario = route?.params?.usuario || {};
-  const [locOk,    setLocOk]    = useState(false);
-  const [buscando, setBuscando] = useState(true);
+  const [userLoc, setUserLoc] = useState(null);
+  const [locStatus, setLocStatus] = useState('loading');
   const [selecionado, setSelecionado] = useState(null);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
+  const regiaoInicial = userLoc || VASSOURAS;
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocOk(status === 'granted');
-      setBuscando(false);
-    })();
+    obterLocalizacao();
   }, []);
+
+  async function obterLocalizacao() {
+    setLocStatus('loading');
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setUserLoc(null);
+        setLocStatus('denied');
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const region = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      };
+
+      setUserLoc(region);
+      setLocStatus('granted');
+      mapRef.current?.animateToRegion(region, 500);
+    } catch (e) {
+      setUserLoc(null);
+      setLocStatus('denied');
+    }
+  }
+
+  function centralizarNoUsuario() {
+    if (userLoc) {
+      mapRef.current?.animateToRegion(userLoc, 600);
+      return;
+    }
+    obterLocalizacao();
+  }
 
   function onPin(rest) {
     setSelecionado(rest);
@@ -58,8 +92,8 @@ export default function MapaScreen({ navigation, route }) {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={VASSOURAS}
-        showsUserLocation={locOk}
+        initialRegion={regiaoInicial}
+        showsUserLocation={locStatus === 'granted'}
         showsMyLocationButton={false}
         onPress={fechar}
       >
@@ -95,8 +129,28 @@ export default function MapaScreen({ navigation, route }) {
             <Text style={s.headerSub}>Vassouras, RJ · {RESTAURANTES.length} locais</Text>
           </View>
         </View>
-        {buscando && <ActivityIndicator size="small" color={C.brand} />}
+        {locStatus === 'loading' && <ActivityIndicator size="small" color={C.brand} />}
       </View>
+
+      {locStatus === 'denied' && (
+        <View style={s.permBanner}>
+          <Feather name="map-pin" size={14} color={C.amber} />
+          <Text style={s.permTxt}>
+            Localização desativada. Mostrando restaurantes em Vassouras/RJ.
+          </Text>
+          <TouchableOpacity onPress={obterLocalizacao} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={s.permBtn}>Ativar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[s.myLocBtn, !userLoc && s.myLocBtnOff]}
+        onPress={centralizarNoUsuario}
+        activeOpacity={0.85}
+      >
+        <Feather name="crosshair" size={18} color={C.brand} />
+      </TouchableOpacity>
 
       {/* ── Bottom sheet animado ── */}
       <Animated.View
@@ -170,6 +224,42 @@ const s = StyleSheet.create({
   headerTitle:  { fontFamily: F.heading,  fontSize: 17, color: C.ink, letterSpacing: -0.3 },
   headerSubRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   headerSub:    { fontFamily: F.regular,  fontSize: 12, color: C.ink3 },
+
+  permBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 108,
+    left: 16,
+    right: 16,
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: '#FFD9A8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    ...SHADOW.float,
+  },
+  permTxt: { flex: 1, fontFamily: F.medium, fontSize: 12, color: C.ink2, lineHeight: 16 },
+  permBtn: { fontFamily: F.heading, fontSize: 12, color: C.brand },
+
+  myLocBtn: {
+    position: 'absolute',
+    bottom: 180,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: C.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: C.border,
+    ...SHADOW.float,
+  },
+  myLocBtnOff: { opacity: 0.72 },
 
   pinWrapper: {
     padding: 6, // espaço para o shadow não ser clipado pelo Marker
