@@ -207,7 +207,7 @@ export default function PerfilScreen({ navigation }) {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={C.surface} />
 
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={[s.headerBtn, { backgroundColor: C.bg, borderColor: C.border }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('HomeTab')} style={[s.headerBtn, { backgroundColor: C.bg, borderColor: C.border }]}>
           <Feather name="arrow-left" size={20} color={C.ink} />
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: C.ink }]}>Perfil</Text>

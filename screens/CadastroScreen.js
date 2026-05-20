@@ -13,6 +13,7 @@ import Animated, {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Feather } from '@expo/vector-icons';
 import { cadastrar } from '../services/auth';
+import { useApp } from '../contexts/AppContext';
 import { C, F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
@@ -115,6 +116,7 @@ function AnimatedCheckIcon() {
 }
 
 export default function CadastroScreen({ navigation }) {
+  const { login } = useApp();
   const [etapa, setEtapa]         = useState('form');
   const [nome, setNome]           = useState('');
   const [email, setEmail]         = useState('');
@@ -226,11 +228,8 @@ export default function CadastroScreen({ navigation }) {
       }
 
       haptic.success();
-      Alert.alert(
-        'Conta criada!',
-        'Seu cadastro foi realizado com sucesso.',
-        [{ text: 'Fazer login', onPress: () => navigation.navigate('Login') }]
-      );
+      login(resultado.usuario);
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch {
       haptic.error();
       Alert.alert('Cadastro', 'Não foi possível criar sua conta. Tente novamente.');
