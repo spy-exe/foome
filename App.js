@@ -24,10 +24,37 @@ import RestauranteScreen from './screens/RestauranteScreen';
 import CarrinhoScreen    from './screens/CarrinhoScreen';
 import PedidosScreen     from './screens/PedidosScreen';
 import MapaScreen        from './screens/MapaScreen';
+import { AppProvider, useApp } from './contexts/AppContext';
+import { CarrinhoProvider } from './contexts/CarrinhoContext';
 
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createStackNavigator();
+
+function RootNavigator() {
+  const { usuario, carregando } = useApp();
+
+  if (carregando) return null;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: true }}>
+      {usuario ? (
+        <>
+          <Stack.Screen name="Home"        component={HomeScreen} />
+          <Stack.Screen name="Restaurante" component={RestauranteScreen} />
+          <Stack.Screen name="Carrinho"    component={CarrinhoScreen} />
+          <Stack.Screen name="Pedidos"     component={PedidosScreen} />
+          <Stack.Screen name="Mapa"        component={MapaScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Login"    component={LoginScreen} />
+          <Stack.Screen name="Cadastro" component={CadastroScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -47,19 +74,14 @@ export default function App() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <View style={{ flex: 1 }} onLayout={onReady}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: true }}>
-          <Stack.Screen name="Login"       component={LoginScreen} />
-          <Stack.Screen name="Cadastro"    component={CadastroScreen} />
-          <Stack.Screen name="App"         component={HomeScreen} />
-          <Stack.Screen name="Home"        component={HomeScreen} />
-          <Stack.Screen name="Restaurante" component={RestauranteScreen} />
-          <Stack.Screen name="Carrinho"    component={CarrinhoScreen} />
-          <Stack.Screen name="Pedidos"     component={PedidosScreen} />
-          <Stack.Screen name="Mapa"        component={MapaScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </View>
+    <AppProvider>
+      <CarrinhoProvider>
+        <View style={{ flex: 1 }} onLayout={onReady}>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </View>
+      </CarrinhoProvider>
+    </AppProvider>
   );
 }
