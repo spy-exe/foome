@@ -14,6 +14,29 @@ import { haptic } from '../utils/haptics';
 const CARD_H   = 320;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
+const CATEGORIAS_MAPA = [
+  { id: null, label: 'Todos' },
+  { id: 'Hambúrgueres', label: '🍔 Hambúrgueres' },
+  { id: 'Pizzas', label: '🍕 Pizzas' },
+  { id: 'Japonês', label: '🍣 Japonês' },
+  { id: 'Mexicano', label: '🌮 Mexicano' },
+  { id: 'Saudável', label: '🥗 Saudável' },
+  { id: 'Massas', label: '🍝 Massas' },
+  { id: 'Churrasco', label: '🥩 Churrasco' },
+  { id: 'Açaí', label: '🍇 Açaí' },
+];
+
+const CATEGORIA_CORES = {
+  'Hambúrgueres': '#E8452C',
+  'Pizzas': '#F59E0B',
+  'Japonês': '#8B5CF6',
+  'Mexicano': '#10B981',
+  'Saudável': '#06B6D4',
+  'Massas': '#F97316',
+  'Churrasco': '#EF4444',
+  'Açaí': '#6D28D9',
+};
+
 export default function MapaScreen({ navigation }) {
   const { setRestaurante } = useCarrinho();
   const [locOk,    setLocOk]    = useState(false);
