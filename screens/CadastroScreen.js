@@ -273,9 +273,12 @@ export default function CadastroScreen({ navigation }) {
           <View style={{ width: 40 }} />
         </View>
         <StepIndicator etapa={etapa} dark style={s.camStepWrap} />
-        <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front">
-          <CameraOverlay />
-        </CameraView>
+        <View style={{ flex: 1 }}>
+          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
+          <View style={[StyleSheet.absoluteFill, s.camOverlay]}>
+            <CameraOverlay />
+          </View>
+        </View>
         <View style={s.camBottom}>
           <TouchableOpacity style={s.captureBtn} onPress={tirarFoto}>
             <View style={s.captureInner} />

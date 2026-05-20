@@ -239,12 +239,12 @@ export default function MapaScreen({ navigation }) {
             contentContainerStyle={s.filtroContent}
           >
             {CATEGORIAS_MAPA.map(cat => {
-              const ativo = filtroCat === cat.key;
+              const ativo = filtroCat === cat.id;
               return (
                 <TouchableOpacity
-                  key={cat.key || 'todos'}
+                  key={String(cat.id ?? 'todos')}
                   style={[s.filtroChip, ativo && s.filtroChipOn]}
-                  onPress={() => escolherFiltro(cat.key)}
+                  onPress={() => escolherFiltro(cat.id)}
                   activeOpacity={0.85}
                 >
                   <Ionicons name={cat.icon} size={14} color={ativo ? '#fff' : C.ink2} />
