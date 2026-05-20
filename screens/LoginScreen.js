@@ -1,42 +1,207 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, Alert, StatusBar, Image,
   Platform, KeyboardAvoidingView, ScrollView,
 } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons, Feather } from '@expo/vector-icons';
+import { autenticar } from '../services/auth';
 import { verificarBiometria } from '../services/biometria';
 import { useApp } from '../contexts/AppContext';
 import { C, F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
+import { haptic } from '../utils/haptics';
+
+function BioButton({ onPress, loading }) {
+  const pulse = useSharedValue(1);
+  const shimmer = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = loading
+      ? withTiming(0.98, { duration: 180 })
+      : withRepeat(
+          withTiming(1.05, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+          -1,
+          true
+        );
+    shimmer.value = withRepeat(withTiming(1, { duration: 1450 }), -1, true);
+
+    return () => {
+      cancelAnimation(pulse);
+      cancelAnimation(shimmer);
+    };
+  }, [loading]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  const iconStyle = useAnimatedStyle(() => ({
+    opacity: 0.74 + shimmer.value * 0.26,
+    transform: [{ scale: 0.96 + shimmer.value * 0.05 }],
+  }));
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: 0.16 + shimmer.value * 0.18,
+    transform: [
+      { translateX: interpolate(shimmer.value, [0, 1], [-22, 28]) },
+      { rotate: '18deg' },
+    ],
+  }));
+
+  return (
+    <Animated.View style={pulseStyle}>
+      <TouchableOpacity
+        style={[s.bioBtn, loading && s.bioBtnLoading]}
+        onPress={onPress}
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        <Animated.View style={[s.bioBtnIcon, iconStyle]}>
+          <Animated.View style={[s.bioShimmer, shimmerStyle]} />
+          <Ionicons name="finger-print" size={26} color={C.brand} />
+        </Animated.View>
+        <View style={s.bioBtnTxt}>
+          <Text style={s.bioBtnTitle}>Entrar com biometria</Text>
+          <Text style={s.bioBtnSub}>{loading ? 'Autenticando...' : 'Digital ou Face ID'}</Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={C.brandBorder} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail]           = useState('');
   const [senha, setSenha]           = useState('');
   const [verSenha, setVerSenha]     = useState(false);
+  const [erros, setErros]           = useState({ email: '', senha: '' });
+  const [bioLoading, setBioLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const { usuario, login } = useApp();
 
-  async function loginComBiometria() {
-    if (!usuario) { Alert.alert('Sem conta', 'Crie uma conta primeiro.'); return; }
-    const r = await verificarBiometria();
-    if (r.sucesso) login(usuario);
-    else Alert.alert('Biometria', r.erro || 'Não foi possível autenticar.');
+  function validarEmail(valor) {
+    if (!valor.trim()) return 'Informe seu e-mail';
+    if (!valor.includes('@')) return 'E-mail inválido';
+    return '';
   }
 
-  function loginComSenha() {
-    if (!usuario) { Alert.alert('Sem conta', 'Crie uma conta primeiro.'); return; }
-    if (email.trim() !== usuario.email || senha !== usuario.senha) {
-      Alert.alert('Dados incorretos', 'E-mail ou senha inválidos.');
+  function validarSenha(valor) {
+    if (!valor.trim()) return 'Informe sua senha';
+    return '';
+  }
+
+  function validar() {
+    const proximosErros = {
+      email: validarEmail(email),
+      senha: validarSenha(senha),
+    };
+
+    setErros(proximosErros);
+    return !proximosErros.email && !proximosErros.senha;
+  }
+
+  function handleEmailChange(valor) {
+    setEmail(valor);
+    if (erros.email) {
+      setErros(prev => ({ ...prev, email: validarEmail(valor) }));
+    }
+  }
+
+  function handleSenhaChange(valor) {
+    setSenha(valor);
+    if (erros.senha) {
+      setErros(prev => ({ ...prev, senha: validarSenha(valor) }));
+    }
+  }
+
+  function handleEsqueciSenha() {
+    haptic.select();
+    Alert.alert(
+      'Recuperar senha',
+      'Entre em contato pelo e-mail suporte@foome.app para redefinir sua senha.'
+    );
+  }
+
+  async function loginComBiometria() {
+    haptic.light();
+    if (!usuario) {
+      haptic.error();
+      Alert.alert('Sem conta', 'Crie uma conta primeiro.');
       return;
     }
-    login(usuario);
+
+    setBioLoading(true);
+    try {
+      const r = await verificarBiometria();
+      if (r.sucesso) {
+        haptic.success();
+        login(usuario);
+      } else {
+        haptic.error();
+        Alert.alert('Biometria', r.erro || 'Não foi possível autenticar.');
+      }
+    } catch {
+      haptic.error();
+      Alert.alert('Biometria', 'Não foi possível autenticar.');
+    } finally {
+      setBioLoading(false);
+    }
+  }
+
+  async function loginComSenha() {
+    if (!validar()) {
+      haptic.error();
+      return;
+    }
+
+    setLoginLoading(true);
+    try {
+      const resultado = await autenticar(email, senha);
+
+      if (!resultado.sucesso) {
+        haptic.error();
+        if (resultado.erro === 'email_nao_encontrado') {
+          setErros(prev => ({ ...prev, email: 'E-mail não encontrado' }));
+          Alert.alert(
+            'E-mail não encontrado',
+            'Este e-mail não está cadastrado. Verifique ou crie uma conta.'
+          );
+        } else if (resultado.erro === 'senha_incorreta') {
+          setErros(prev => ({ ...prev, senha: 'Senha incorreta' }));
+          Alert.alert(
+            'Senha incorreta',
+            'A senha informada não confere. Tente novamente.'
+          );
+        }
+        return;
+      }
+
+      haptic.success();
+      setErros({ email: '', senha: '' });
+      login(resultado.usuario);
+    } catch {
+      haptic.error();
+      Alert.alert('Login', 'Não foi possível entrar agora. Tente novamente.');
+    } finally {
+      setLoginLoading(false);
+    }
   }
 
   return (
     <KeyboardAvoidingView
       style={s.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
 
@@ -72,16 +237,7 @@ export default function LoginScreen({ navigation }) {
 
           {/* Biometria */}
           {usuario && (
-            <TouchableOpacity style={s.bioBtn} onPress={loginComBiometria} activeOpacity={0.8}>
-              <View style={s.bioBtnIcon}>
-                <Ionicons name="finger-print" size={26} color={C.brand} />
-              </View>
-              <View style={s.bioBtnTxt}>
-                <Text style={s.bioBtnTitle}>Entrar com biometria</Text>
-                <Text style={s.bioBtnSub}>Digital ou Face ID</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.brandBorder} />
-            </TouchableOpacity>
+            <BioButton onPress={loginComBiometria} loading={bioLoading} />
           )}
 
           <View style={s.divider}>
@@ -97,8 +253,13 @@ export default function LoginScreen({ navigation }) {
             placeholder="seu@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            textContentType="emailAddress"
             value={email}
-            onChangeText={setEmail}
+            erro={erros.email}
+            onFocus={() => erros.email && haptic.select()}
+            onChangeText={handleEmailChange}
           />
 
           {/* Senha */}
@@ -106,21 +267,48 @@ export default function LoginScreen({ navigation }) {
           <InputField
             icon={<Feather name="lock" size={16} color={C.ink3} />}
             rightElement={
-              <TouchableOpacity onPress={() => setVerSenha(v => !v)} style={{ padding: 4 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  haptic.select();
+                  setVerSenha(v => !v);
+                }}
+                style={s.fieldIconBtn}
+              >
                 <Feather name={verSenha ? 'eye-off' : 'eye'} size={16} color={C.ink3} />
               </TouchableOpacity>
             }
             placeholder="••••••••"
             secureTextEntry={!verSenha}
+            textContentType="password"
             value={senha}
-            onChangeText={setSenha}
+            erro={erros.senha}
+            onFocus={() => erros.senha && haptic.select()}
+            onChangeText={handleSenhaChange}
           />
 
-          <PrimaryButton label="Entrar" onPress={loginComSenha} style={{ marginTop: 22 }} />
+          <TouchableOpacity
+            onPress={handleEsqueciSenha}
+            style={s.forgotBtn}
+          >
+            <Text style={s.forgotTxt}>Esqueci a senha?</Text>
+          </TouchableOpacity>
+
+          <PrimaryButton
+            label="Entrar"
+            onPress={loginComSenha}
+            loading={loginLoading}
+            style={{ marginTop: 18 }}
+          />
 
           <View style={s.linkRow}>
             <Text style={s.linkTxt}>Não tem conta?  </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
+            <TouchableOpacity
+              onPress={() => {
+                haptic.select();
+                navigation.navigate('Cadastro');
+              }}
+              style={s.linkActionBtn}
+            >
               <Text style={s.linkAcao}>Cadastre-se grátis</Text>
             </TouchableOpacity>
           </View>
@@ -150,6 +338,8 @@ const s = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: C.brandBorder,
+    ...SHADOW.card,
+    shadowColor: C.brand,
   },
   logoTxt: { fontFamily: F.headingLg, fontSize: 40, color: C.brand, letterSpacing: -1.5 },
   tagline: { fontFamily: F.regular, fontSize: 14, color: C.ink3, marginTop: 5 },
@@ -165,6 +355,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     alignSelf: 'stretch',
+    ...SHADOW.card,
   },
   avatar: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: C.brandBorder },
   avatarFallback: { backgroundColor: C.border, justifyContent: 'center', alignItems: 'center' },
@@ -190,6 +381,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.brandBorder,
   },
+  bioBtnLoading: { opacity: 0.78 },
   bioBtnIcon: {
     width: 46, height: 46,
     borderRadius: 14,
@@ -198,6 +390,14 @@ const s = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.brandBorder,
+    overflow: 'hidden',
+  },
+  bioShimmer: {
+    position: 'absolute',
+    top: -8,
+    bottom: -8,
+    width: 15,
+    backgroundColor: C.brand,
   },
   bioBtnTxt:   { flex: 1 },
   bioBtnTitle: { fontFamily: F.semibold, fontSize: 15, color: C.brand },
@@ -215,7 +415,23 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
 
-  linkRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  linkRow: { minHeight: 44, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 14 },
   linkTxt:  { fontFamily: F.regular,  fontSize: 14, color: C.ink3 },
+  linkActionBtn: { minHeight: 44, justifyContent: 'center' },
   linkAcao: { fontFamily: F.semibold, fontSize: 14, color: C.brand },
+  fieldIconBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -10,
+  },
+  forgotBtn: {
+    minHeight: 44,
+    alignSelf: 'flex-end',
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  forgotTxt: { fontFamily: F.medium, fontSize: 12, color: C.ink3 },
 });

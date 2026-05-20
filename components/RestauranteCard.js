@@ -1,14 +1,41 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { C, F, SHADOW } from '../constants/theme';
+import { haptic } from '../utils/haptics';
 
 export default function RestauranteCard({ restaurante, onPress }) {
   const gratis  = restaurante.entrega === 'Grátis';
   const popular = restaurante.avaliacao >= 4.8;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  function pressIn() {
+    Animated.timing(scale, {
+      toValue: 0.97,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  function pressOut() {
+    Animated.timing(scale, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  }
 
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.88} onPress={onPress}>
+    <Animated.View style={[s.card, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        onPress={() => {
+          haptic.select();
+          onPress?.();
+        }}
+      >
 
       {/* ── Topo colorido com emoji ── */}
       <View style={[s.topo, { backgroundColor: restaurante.cor + '1A' }]}>
@@ -48,7 +75,8 @@ export default function RestauranteCard({ restaurante, onPress }) {
         </View>
       </View>
 
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

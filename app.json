@@ -3,25 +3,47 @@
     "name": "Foome",
     "slug": "foome",
     "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.foome.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Foome usa a câmera para sua foto de perfil.",
         "NSFaceIDUsageDescription": "Foome usa biometria para confirmar suas compras."
       }
     },
     "android": {
-      "adaptiveIcon": { "backgroundColor": "#FF4757" },
-      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E8452C"
+      },
+      "package": "com.foome.app",
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "plugins": [
-      ["expo-camera", { "cameraPermission": "Foome precisa da câmera para sua foto de perfil." }]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Foome precisa da câmera para sua foto de perfil."
+        }
+      ],
+      "expo-splash-screen",
+      "expo-font"
     ]
   }
 }

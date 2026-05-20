@@ -5,7 +5,8 @@ import React, {
   useEffect,
   useReducer,
 } from 'react';
-import { getPedidos, getUsuario, removerUsuario, salvarUsuario } from '../services/storage';
+import { getPedidos, salvarUsuario } from '../services/storage';
+import { logout as authLogout, validarSessao } from '../services/auth';
 
 const AppContext = createContext(null);
 
@@ -43,7 +44,7 @@ export function AppProvider({ children }) {
       let pedidos = [];
 
       try {
-        usuario = await getUsuario();
+        usuario = await validarSessao();
       } catch {
         usuario = null;
       }
@@ -83,7 +84,7 @@ export function AppProvider({ children }) {
   };
 
   const logout = async () => {
-    await removerUsuario();
+    await authLogout();
     dispatch({ type: 'LOGOUT' });
   };
 

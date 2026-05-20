@@ -9,6 +9,7 @@ import * as Location from 'expo-location';
 import { RESTAURANTES } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
+import { haptic } from '../utils/haptics';
 
 const CARD_H   = 210;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
@@ -30,6 +31,7 @@ export default function MapaScreen({ navigation }) {
   }, []);
 
   function onPin(rest) {
+    haptic.select();
     setSelecionado(rest);
     Animated.spring(slideY, {
       toValue: 0,
@@ -45,6 +47,7 @@ export default function MapaScreen({ navigation }) {
 
   function fechar() {
     if (!selecionado) return;
+    haptic.select();
     Animated.timing(slideY, {
       toValue: CARD_H + 60,
       duration: 220,
@@ -86,7 +89,13 @@ export default function MapaScreen({ navigation }) {
 
       {/* ── Header flutuante ── */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('HomeTab')} style={s.backBtn}>
+        <TouchableOpacity
+          onPress={() => {
+            haptic.select();
+            navigation.navigate('HomeTab');
+          }}
+          style={s.backBtn}
+        >
           <Feather name="arrow-left" size={20} color={C.ink} />
         </TouchableOpacity>
         <View style={s.headerText}>
@@ -130,6 +139,7 @@ export default function MapaScreen({ navigation }) {
             <TouchableOpacity
               style={[s.sheetBtn, { backgroundColor: selecionado.cor }]}
               onPress={() => {
+                haptic.light();
                 setRestaurante(selecionado);
                 navigation.navigate('HomeTab', {
                   screen: 'Restaurante',

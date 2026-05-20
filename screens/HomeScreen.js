@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, StatusBar, Image, Platform, TextInput,
+  Animated, Alert, Dimensions, RefreshControl,
 } from 'react-native';
+import Reanimated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { RESTAURANTES } from '../services/dados';
+import { useFocusEffect } from '@react-navigation/native';
+import { RESTAURANTES, formatarPreco } from '../services/dados';
+import { getPedidos } from '../services/storage';
+import { getItensFavoritos, getUltimoPedido } from '../services/recomendacao';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
+import SkeletonShimmer from '../components/SkeletonShimmer';
+import { haptic } from '../utils/haptics';
+
+const { width } = Dimensions.get('window');
+const BANNER_WIDTH = width - 32;
 
 const CATEGORIAS = [
   { key: 'Hambúrgueres', label: 'Burgers',    icon: 'fast-food-outline'  },
@@ -21,18 +37,304 @@ const CATEGORIAS = [
   { key: 'Açaí',         label: 'Açaí',      icon: 'cafe-outline'       },
 ];
 
+const BANNERS = [
+  {
+    id: '1',
+    titulo: 'Frete grátis',
+    subtitulo: 'Em pedidos acima de R$ 30',
+    cor: C.brand,
+    icone: 'truck',
+    tag: 'OFERTA DO DIA',
+  },
+  {
+    id: '2',
+    titulo: 'Novo: Açaí da Vila',
+    subtitulo: 'Peça já e aproveite',
+    cor: '#9333EA',
+    icone: 'heart',
+    tag: 'NOVIDADE',
+  },
+  {
+    id: '3',
+    titulo: '10% off no pix',
+    subtitulo: 'Use o cupom FOOME10',
+    cor: C.teal,
+    icone: 'dollar-sign',
+    tag: 'CUPOM',
+  },
+];
+
+function FoomeRefreshControl({ refreshing }) {
+  const rotate = useSharedValue(0);
+
+  useEffect(() => {
+    if (refreshing) {
+      rotate.value = withRepeat(withTiming(360, { duration: 780 }), -1, false);
+    } else {
+      rotate.value = withTiming(0, { duration: 180 });
+    }
+    return () => cancelAnimation(rotate);
+  }, [refreshing]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotate.value}deg` }],
+  }));
+
+  if (!refreshing) return null;
+
+  return (
+    <View style={s.refreshBox}>
+      <Reanimated.Text style={[s.refreshEmoji, iconStyle]}>🍔</Reanimated.Text>
+      <Text style={s.refreshTxt}>Buscando restaurantes...</Text>
+    </View>
+  );
+}
+
+function HomeSkeletonList() {
+  return (
+    <View style={s.skeletonWrap}>
+      {[0, 1, 2].map(i => (
+        <View key={i} style={s.skeletonCard}>
+          <SkeletonShimmer style={s.skeletonHero} />
+          <View style={s.skeletonBody}>
+            <View style={s.skeletonRow}>
+              <SkeletonShimmer style={s.skeletonTitle} />
+              <SkeletonShimmer style={s.skeletonPill} />
+            </View>
+            <SkeletonShimmer style={s.skeletonLine} />
+            <SkeletonShimmer style={s.skeletonMeta} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <View style={s.skeletonScreen}>
+      <SkeletonShimmer style={s.skeletonBanner} />
+      <View style={s.skeletonChipRow}>
+        {[0, 1, 2, 3, 4].map(i => (
+          <SkeletonShimmer key={i} style={s.skeletonChip} />
+        ))}
+      </View>
+      <HomeSkeletonList />
+    </View>
+  );
+}
+
+function HighlightText({ texto, termo }) {
+  if (!termo) return <Text>{texto}</Text>;
+
+  const idx = texto.toLowerCase().indexOf(termo.toLowerCase());
+  if (idx === -1) return <Text>{texto}</Text>;
+
+  return (
+    <Text>
+      {texto.slice(0, idx)}
+      <Text style={s.highlightTxt}>{texto.slice(idx, idx + termo.length)}</Text>
+      {texto.slice(idx + termo.length)}
+    </Text>
+  );
+}
+
+function CategoriaChip({ cat, ativa, onPress }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  function pressIn() {
+    Animated.spring(scale, {
+      toValue: 0.92,
+      friction: 6,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  function pressOut() {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 6,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={[s.catChip, ativa && s.catChipOn]}
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        activeOpacity={1}
+      >
+        <Ionicons name={cat.icon} size={16} color={ativa ? C.brand : C.ink3} />
+        <Text style={[s.catTxt, ativa && s.catTxtOn]}>{cat.label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function restaurantesMaisPedidos(pedidos) {
+  const contagem = {};
+
+  for (const pedido of pedidos) {
+    const nome = pedido.restauranteNome || pedido.restaurante;
+    if (!nome) continue;
+    contagem[nome] = (contagem[nome] || 0) + 1;
+  }
+
+  return Object.entries(contagem)
+    .sort((a, b) => b[1] - a[1])
+    .map(([nome]) => RESTAURANTES.find(r => r.nome === nome))
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 export default function HomeScreen({ navigation }) {
   const { usuario } = useApp();
-  const { setRestaurante } = useCarrinho();
+  const { adicionar, limpar, setRestaurante } = useCarrinho();
   const [busca, setBusca]     = useState('');
+  const [termoDebounced, setTermoDebounced] = useState('');
   const [catAtiva, setCatAtiva] = useState(null);
+  const [favoritos, setFavoritos] = useState([]);
+  const [maisPedidos, setMaisPedidos] = useState([]);
+  const [ultimoPedido, setUltimoPedido] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const fabPulse = useRef(new Animated.Value(1)).current;
+  const fabPress = useRef(new Animated.Value(1)).current;
+  const bannerScrollRef = useRef(null);
+  const refreshTimer = useRef(null);
 
-  const lista = RESTAURANTES.filter(r => {
-    if (catAtiva && r.categoria !== catAtiva) return false;
-    if (!busca) return true;
-    const q = busca.toLowerCase();
-    return r.nome.toLowerCase().includes(q) || r.categoria.toLowerCase().includes(q);
-  });
+  useEffect(() => () => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const texto = busca.trim();
+    if (!texto) {
+      setTermoDebounced('');
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setTermoDebounced(texto), 300);
+    return () => clearTimeout(timer);
+  }, [busca]);
+
+  useEffect(() => {
+    if (busca.trim()) return undefined;
+
+    const timer = setInterval(() => {
+      setBannerIdx(prev => {
+        const next = (prev + 1) % BANNERS.length;
+        bannerScrollRef.current?.scrollTo({ x: next * BANNER_WIDTH, animated: true });
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [busca]);
+
+  const onRefresh = useCallback(() => {
+    haptic.medium();
+    setRefreshing(true);
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => setRefreshing(false), 1200);
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+
+    async function carregarHistorico() {
+      const [favoritosDoUsuario, ultimo, pedidos] = await Promise.all([
+        getItensFavoritos(),
+        getUltimoPedido(),
+        getPedidos(),
+      ]);
+
+      if (ativo) {
+        setFavoritos(favoritosDoUsuario);
+        setUltimoPedido(ultimo);
+        setMaisPedidos(restaurantesMaisPedidos(pedidos));
+      }
+    }
+
+    carregarHistorico();
+    return () => {
+      ativo = false;
+    };
+  }, []));
+
+  useEffect(() => {
+    if (!ultimoPedido || busca) return undefined;
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(fabPulse, {
+          toValue: 1.08,
+          duration: 850,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fabPulse, {
+          toValue: 1,
+          duration: 850,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    pulse.start();
+    return () => pulse.stop();
+  }, [busca, fabPulse, ultimoPedido]);
+
+  const fabScale = Animated.multiply(fabPulse, fabPress);
+
+  function repetirUltimoPedido() {
+    if (!ultimoPedido) {
+      haptic.error();
+      Alert.alert('Sem pedidos', 'Faça seu primeiro pedido primeiro!');
+      return;
+    }
+
+    const rest = RESTAURANTES.find(r => r.nome === ultimoPedido.restaurante);
+    if (!rest) {
+      haptic.error();
+      Alert.alert('Restaurante indisponível', 'Não encontramos o restaurante desse pedido.');
+      return;
+    }
+
+    haptic.heavy();
+    limpar();
+    setRestaurante(rest);
+
+    for (const item of ultimoPedido.itens ?? []) {
+      const produto = rest.produtos.find(p => p.id === item.id) ?? item;
+      for (let i = 0; i < (item.qtd ?? 1); i += 1) {
+        adicionar(produto);
+      }
+    }
+
+    navigation.navigate('Carrinho');
+  }
+
+  const hasBusca = busca.trim().length > 0;
+  const termoBusca = termoDebounced || busca.trim();
+  const lista = useMemo(() => (
+    RESTAURANTES.filter(r => {
+      if (catAtiva && r.categoria !== catAtiva) return false;
+      if (!termoDebounced) return true;
+      const q = termoDebounced.toLowerCase();
+      return r.nome.toLowerCase().includes(q) || r.categoria.toLowerCase().includes(q);
+    })
+  ), [catAtiva, termoDebounced]);
 
   return (
     <View style={s.root}>
@@ -50,14 +352,22 @@ export default function HomeScreen({ navigation }) {
               <Text style={s.loc}>Vassouras, RJ</Text>
             </View>
           </View>
-          {usuario?.fotoUri
-            ? <Image source={{ uri: usuario.fotoUri }} style={s.avatar} />
-            : (
-              <View style={[s.avatar, s.avatarFallback]}>
-                <Feather name="user" size={18} color={C.ink3} />
-              </View>
-            )
-          }
+          <TouchableOpacity
+            onPress={() => {
+              haptic.select();
+              navigation.navigate('PerfilTab');
+            }}
+            activeOpacity={0.85}
+          >
+            {usuario?.fotoUri
+              ? <Image source={{ uri: usuario.fotoUri }} style={s.avatar} />
+              : (
+                <View style={[s.avatar, s.avatarFallback]}>
+                  <Feather name="user" size={18} color={C.ink3} />
+                </View>
+              )
+            }
+          </TouchableOpacity>
         </View>
 
         <View style={s.searchRow}>
@@ -73,7 +383,10 @@ export default function HomeScreen({ navigation }) {
             />
             {busca.length > 0 && (
               <TouchableOpacity
-                onPress={() => setBusca('')}
+                onPress={() => {
+                  haptic.select();
+                  setBusca('');
+                }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Feather name="x" size={15} color={C.ink3} />
@@ -82,29 +395,73 @@ export default function HomeScreen({ navigation }) {
           </View>
           <TouchableOpacity
             style={s.mapaBtn}
-            onPress={() => navigation.navigate('MapaTab')}
+            onPress={() => {
+              haptic.select();
+              navigation.navigate('MapaTab');
+            }}
           >
             <Feather name="map" size={18} color={C.brand} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.brand}
+            colors={[C.brand, C.amber, C.teal]}
+            progressBackgroundColor={C.surface}
+          />
+        }
+      >
+        <FoomeRefreshControl refreshing={refreshing} />
+
+        {loading ? (
+          <HomeSkeleton />
+        ) : (
+          <>
 
         {/* ── Banner promo ── */}
-        {!busca && (
-          <View style={s.banner}>
-            <View>
-              <Text style={s.bannerTag}>OFERTA DO DIA</Text>
-              <Text style={s.bannerTitle}>Frete grátis</Text>
-              <Text style={s.bannerSub}>Em pedidos acima de R$ 30</Text>
+        {!hasBusca && (
+          <View style={s.bannerWrap}>
+            <ScrollView
+              ref={bannerScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
+                setBannerIdx(Math.max(0, Math.min(idx, BANNERS.length - 1)));
+              }}
+              scrollEventThrottle={16}
+            >
+              {BANNERS.map(banner => (
+                <View
+                  key={banner.id}
+                  style={[s.banner, { backgroundColor: banner.cor, width: BANNER_WIDTH }]}
+                >
+                  <View>
+                    <Text style={s.bannerTag}>{banner.tag}</Text>
+                    <Text style={s.bannerTitle}>{banner.titulo}</Text>
+                    <Text style={s.bannerSub}>{banner.subtitulo}</Text>
+                  </View>
+                  <Feather name={banner.icone} size={48} color="rgba(255,255,255,0.25)" />
+                </View>
+              ))}
+            </ScrollView>
+            <View style={s.dots}>
+              {BANNERS.map((banner, i) => (
+                <View key={banner.id} style={[s.dotBanner, i === bannerIdx && s.dotBannerAtivo]} />
+              ))}
             </View>
-            <Feather name="truck" size={52} color="rgba(255,255,255,0.25)" />
           </View>
         )}
 
         {/* ── Categorias ── */}
-        {!busca && (
+        {!hasBusca && (
           <>
             <Text style={s.sectionLabel}>O que você quer?</Text>
             <ScrollView
@@ -115,17 +472,55 @@ export default function HomeScreen({ navigation }) {
               {CATEGORIAS.map(cat => {
                 const ativa = catAtiva === cat.key;
                 return (
-                  <TouchableOpacity
+                  <CategoriaChip
                     key={cat.key}
-                    style={[s.catChip, ativa && s.catChipOn]}
-                    onPress={() => setCatAtiva(ativa ? null : cat.key)}
+                    cat={cat}
+                    ativa={ativa}
+                    onPress={() => {
+                      haptic.select();
+                      setCatAtiva(ativa ? null : cat.key);
+                    }}
+                  />
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
+        {!hasBusca && !catAtiva && favoritos.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>Para você</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.favRow}
+            >
+              {favoritos.map(item => {
+                const rest = RESTAURANTES.find(r => r.produtos.some(p => p.id === item.id));
+                if (!rest) return null;
+
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={s.favCard}
+                    onPress={() => {
+                      haptic.select();
+                      setRestaurante(rest);
+                      navigation.navigate('Restaurante', { restaurante: rest });
+                    }}
+                    activeOpacity={0.85}
                   >
-                    <Ionicons
-                      name={cat.icon}
-                      size={16}
-                      color={ativa ? C.brand : C.ink3}
-                    />
-                    <Text style={[s.catTxt, ativa && s.catTxtOn]}>{cat.label}</Text>
+                    <View style={[s.favEmoji, { backgroundColor: rest.cor + '18' }]}>
+                      <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+                    </View>
+                    <Text style={s.favNome} numberOfLines={1}>{item.nome}</Text>
+                    <Text style={[s.favPreco, { color: rest.cor }]}>
+                      {formatarPreco(item.preco)}
+                    </Text>
+                    <View style={s.favVezes}>
+                      <Feather name="repeat" size={10} color={C.ink3} />
+                      <Text style={s.favVezesTxt}>{item.vezesPedido}x pedido</Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -133,19 +528,38 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
+        {!hasBusca && !catAtiva && maisPedidos.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>Mais pedidos 🔥</Text>
+            {maisPedidos.map(rest => (
+              <RestauranteCard
+                key={`mais-${rest.id}`}
+                restaurante={rest}
+                onPress={() => {
+                  setRestaurante(rest);
+                  navigation.navigate('Restaurante', { restaurante: rest });
+                }}
+              />
+            ))}
+          </>
+        )}
+
         {/* ── Lista de restaurantes ── */}
         <View style={s.sectionHeader}>
           <Text style={s.sectionLabel}>
-            {busca
+            {hasBusca
               ? `Resultados (${lista.length})`
               : catAtiva
                 ? CATEGORIAS.find(c => c.key === catAtiva)?.label ?? catAtiva
                 : 'Perto de você'}
           </Text>
-          {!busca && (
+          {!hasBusca && (
             <TouchableOpacity
               style={s.mapaLink}
-              onPress={() => navigation.navigate('MapaTab')}
+              onPress={() => {
+                haptic.select();
+                navigation.navigate('MapaTab');
+              }}
             >
               <Feather name="map-pin" size={12} color={C.brand} />
               <Text style={s.mapaLinkTxt}>Ver no mapa</Text>
@@ -153,27 +567,65 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {lista.length === 0 && (
-          <View style={s.vazio}>
-            <Feather name="search" size={40} color={C.ink4} />
-            <Text style={s.vazioTitulo}>Nenhum resultado</Text>
-            <Text style={s.vazioSub}>Tente outro nome ou categoria</Text>
-          </View>
+        {hasBusca && (
+          <Text style={s.searchHint}>
+            Buscando por <HighlightText texto={termoBusca} termo={termoBusca} />
+          </Text>
         )}
 
-        {lista.map(rest => (
-          <RestauranteCard
-            key={rest.id}
-            restaurante={rest}
-            onPress={() => {
-              setRestaurante(rest);
-              navigation.navigate('Restaurante', { restaurante: rest });
-            }}
-          />
-        ))}
+        {refreshing ? (
+          <HomeSkeletonList />
+        ) : (
+          <>
+            {lista.length === 0 && (
+              <View style={s.vazio}>
+                <Feather name="search" size={40} color={C.ink4} />
+                <Text style={s.vazioTitulo}>Nenhum resultado</Text>
+                <Text style={s.vazioSub}>Tente outro nome ou categoria</Text>
+              </View>
+            )}
+
+            {lista.map(rest => (
+              <RestauranteCard
+                key={rest.id}
+                restaurante={rest}
+                onPress={() => {
+                  setRestaurante(rest);
+                  navigation.navigate('Restaurante', { restaurante: rest });
+                }}
+              />
+            ))}
+          </>
+        )}
 
         <View style={{ height: 36 }} />
+          </>
+        )}
       </ScrollView>
+
+      {ultimoPedido && !hasBusca && !loading && (
+        <Animated.View style={[s.fab, { transform: [{ scale: fabScale }] }]}>
+          <TouchableOpacity
+            style={s.fabBtn}
+            onPress={repetirUltimoPedido}
+            activeOpacity={0.85}
+            onPressIn={() => {
+              Animated.spring(fabPress, {
+                toValue: 0.9,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onPressOut={() => {
+              Animated.spring(fabPress, {
+                toValue: 1,
+                useNativeDriver: true,
+              }).start();
+            }}
+          >
+            <Feather name="repeat" size={20} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -234,12 +686,25 @@ const s = StyleSheet.create({
     borderColor: C.brandBorder,
   },
 
+  refreshBox: {
+    height: 66,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  refreshEmoji: { fontSize: 28 },
+  refreshTxt: { fontFamily: F.medium, fontSize: 11, color: C.ink3 },
+
+  bannerWrap: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+  },
   banner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    margin: 16,
-    backgroundColor: C.brand,
+    minHeight: 112,
     borderRadius: 22,
     paddingHorizontal: 22,
     paddingVertical: 22,
@@ -251,6 +716,22 @@ const s = StyleSheet.create({
   bannerTag:   { fontFamily: F.semibold, fontSize: 10, color: 'rgba(255,255,255,0.65)', letterSpacing: 1.4, marginBottom: 4 },
   bannerTitle: { fontFamily: F.headingLg, fontSize: 24, color: '#fff', letterSpacing: -0.5 },
   bannerSub:   { fontFamily: F.regular, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  dotBanner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.ink4,
+  },
+  dotBannerAtivo: {
+    width: 18,
+    backgroundColor: C.brand,
+  },
 
   sectionLabel: {
     fontFamily: F.heading,
@@ -277,6 +758,29 @@ const s = StyleSheet.create({
   catTxt:    { fontFamily: F.medium, fontSize: 13, color: C.ink2 },
   catTxtOn:  { color: C.brand },
 
+  favRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 18 },
+  favCard: {
+    width: 140,
+    backgroundColor: C.surface,
+    borderRadius: 18,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    ...SHADOW.card,
+  },
+  favEmoji: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  favNome: { fontFamily: F.semibold, fontSize: 13, color: C.ink, marginBottom: 2 },
+  favPreco: { fontFamily: F.bold, fontSize: 15 },
+  favVezes: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  favVezesTxt: { fontFamily: F.medium, fontSize: 10, color: C.ink3 },
+
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -286,8 +790,72 @@ const s = StyleSheet.create({
   },
   mapaLink:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
   mapaLinkTxt: { fontFamily: F.semibold, fontSize: 13, color: C.brand },
+  searchHint: {
+    fontFamily: F.medium,
+    fontSize: 12,
+    color: C.ink3,
+    paddingHorizontal: 16,
+    marginTop: -4,
+    marginBottom: 10,
+  },
+  highlightTxt: {
+    backgroundColor: C.amberLight,
+    color: C.ink,
+    fontFamily: F.bold,
+  },
 
   vazio: { alignItems: 'center', paddingTop: 64, gap: 10 },
   vazioTitulo: { fontFamily: F.heading,  fontSize: 17, color: C.ink2 },
   vazioSub:    { fontFamily: F.regular,  fontSize: 13, color: C.ink3 },
+
+  skeletonScreen: { paddingTop: 16 },
+  skeletonBanner: {
+    width: BANNER_WIDTH,
+    height: 112,
+    borderRadius: 22,
+    marginHorizontal: 16,
+    marginBottom: 18,
+  },
+  skeletonChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 18,
+  },
+  skeletonChip: {
+    width: 82,
+    height: 38,
+    borderRadius: 22,
+  },
+  skeletonWrap: { paddingHorizontal: 16 },
+  skeletonCard: {
+    backgroundColor: C.surface,
+    marginBottom: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...SHADOW.card,
+  },
+  skeletonHero: { height: 88, borderRadius: 0 },
+  skeletonBody: { padding: 14 },
+  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  skeletonTitle: { flex: 1, height: 18, borderRadius: 6 },
+  skeletonPill: { width: 54, height: 22, borderRadius: 8 },
+  skeletonLine: { width: '48%', height: 12, borderRadius: 6, marginBottom: 12 },
+  skeletonMeta: { width: '74%', height: 12, borderRadius: 6 },
+
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+    zIndex: 100,
+    ...SHADOW.float,
+  },
+  fabBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: C.brand,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

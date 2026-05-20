@@ -1,21 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { ANIM, C, F, RADIUS, SPACING } from '../constants/theme';
+import { C, F } from '../constants/theme';
 
 const CONFIG = {
-  sucesso: { bg: C.tealLight, icon: 'check-circle', cor: C.teal, iconeCor: C.teal },
-  erro: { bg: C.brandLight, icon: 'alert-circle', cor: C.brand, iconeCor: C.brand },
-  info: { bg: C.bg, icon: 'info', cor: C.ink, iconeCor: C.ink2 },
+  sucesso: { bg: C.tealLight, icon: 'check-circle', color: C.teal },
+  erro: { bg: C.brandLight, icon: 'alert-circle', color: C.brand },
+  info: { bg: C.bg, icon: 'info', color: C.ink },
 };
 
-export default function Toast({
-  tipo = 'info',
-  mensagem,
-  visivel,
-  duracao = 3000,
-  onClose,
-}) {
+export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000, onClose }) {
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -31,7 +25,7 @@ export default function Toast({
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: ANIM.normal,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start();
@@ -64,20 +58,17 @@ export default function Toast({
         s.wrap,
         {
           backgroundColor: cfg.bg,
-          transform: [{ translateY }],
           opacity,
+          transform: [{ translateY }],
         },
       ]}
     >
-      <Feather name={cfg.icon} size={18} color={cfg.iconeCor} />
-      <Text style={[s.txt, { color: cfg.cor }]} numberOfLines={2}>
+      <Feather name={cfg.icon} size={18} color={cfg.color} />
+      <Text style={[s.txt, { color: cfg.color }]} numberOfLines={2}>
         {mensagem}
       </Text>
-      <TouchableOpacity
-        onPress={onClose}
-        hitSlop={{ top: SPACING.sm, bottom: SPACING.sm, left: SPACING.sm, right: SPACING.sm }}
-      >
-        <Feather name="x" size={16} color={cfg.iconeCor} />
+      <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Feather name="x" size={16} color={cfg.color} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -87,20 +78,20 @@ const s = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 60,
-    left: SPACING.lg,
-    right: SPACING.lg,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    elevation: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    zIndex: 9999,
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
   },
   txt: {
     flex: 1,

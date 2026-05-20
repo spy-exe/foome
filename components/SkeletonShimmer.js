@@ -1,0 +1,48 @@
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { C } from '../constants/theme';
+
+export default function SkeletonShimmer({ style }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1150, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [-120, 260]) }],
+  }));
+
+  return (
+    <View style={[s.base, style]}>
+      <Animated.View style={[s.shimmer, shimmerStyle]} />
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  base: {
+    overflow: 'hidden',
+    backgroundColor: C.border,
+  },
+  shimmer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 86,
+    backgroundColor: 'rgba(255,255,255,0.46)',
+    transform: [{ rotate: '12deg' }],
+  },
+});

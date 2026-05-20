@@ -1,148 +1,527 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, Alert, StatusBar, Platform,
+  StyleSheet, Alert, StatusBar, Platform, TextInput,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  SlideInDown,
+  SlideOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
 import { verificarBiometria } from '../services/biometria';
 import { salvarPedidos, getPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
+import { haptic } from '../utils/haptics';
 
-export default function CarrinhoScreen({ navigation }) {
-  const { usuario, atualizarPedidosCount } = useApp();
-  const { itens, restaurante, totalPreco, totalItens, limpar } = useCarrinho();
-  const [confirmando, setConfirmando] = useState(false);
+const ENDERECOS_MOCK = [
+  { id: '1', label: 'Casa', endereco: 'Rua das Acácias, 42 - Vassouras, RJ', icon: 'home' },
+  { id: '2', label: 'Trabalho', endereco: 'Av. Principal, 100 - Sala 302 - Vassouras, RJ', icon: 'briefcase' },
+  { id: '3', label: 'Faculdade', endereco: 'Campus Universitário - Vassouras, RJ', icon: 'book-open' },
+];
 
-  if (!restaurante) return null;
+const PAGAMENTOS = [
+  { id: 'pix', label: 'PIX', icon: 'smartphone', cor: C.teal },
+  { id: 'credito', label: 'Crédito', icon: 'credit-card', cor: C.amber },
+  { id: 'debito', label: 'Débito', icon: 'credit-card', cor: C.brand },
+];
 
-  const subtotal    = totalPreco;
-  const taxaEntrega = restaurante.entrega === 'Grátis'
-    ? 0
-    : parseFloat(restaurante.entrega.replace('R$ ', '').replace(',', '.'));
-  const total = subtotal + taxaEntrega;
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-  async function confirmarPedido() {
-    if (totalItens === 0 || !usuario) return;
+function hapticSelection() {
+  haptic.select();
+}
 
-    setConfirmando(true);
-    const result = await verificarBiometria();
-    setConfirmando(false);
-    if (!result.sucesso) {
-      Alert.alert('Biometria necessária', 'Confirme sua identidade para finalizar.');
-      return;
-    }
-    const pedido = {
-      id: Date.now().toString(),
-      restaurante:       restaurante.nome,
-      restauranteCor:    restaurante.cor,
-      restauranteEmoji:  restaurante.emoji,
-      itens: itens.map(item => ({ ...item })),
-      total,
-      timestamp: new Date().toISOString(),
-      status: 'confirmado',
-    };
-    const anteriores = await getPedidos();
-    const pedidosAtualizados = [pedido, ...anteriores];
-    await salvarPedidos(pedidosAtualizados);
-    await atualizarPedidosCount(pedidosAtualizados);
-    Alert.alert(
-      'Pedido confirmado!',
-      `${restaurante.nome} · ${formatarPreco(total)}`,
-      [{
-        text: 'OK',
-        onPress: () => {
-          limpar();
-          navigation.popToTop();
-        },
-      }],
+function hapticSuccess() {
+  haptic.success();
+}
+
+function hapticError() {
+  haptic.error();
+}
+
+function hapticImpact() {
+  haptic.medium();
+}
+
+function BioPulse() {
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 600 }),
+        withTiming(1, { duration: 600 }),
+      ),
+      -1,
+      true,
+    );
+  }, [pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  return (
+    <Animated.View style={[s.fingerprintOuter, pulseStyle]}>
+      <Ionicons name="finger-print" size={50} color={C.brand} />
+    </Animated.View>
+  );
+}
+
+function SwipeableItem({ item, cor, onDelete }) {
+  const swipeRef = useRef(null);
+
+  function renderRightActions() {
+    return (
+      <TouchableOpacity
+        style={s.deleteAction}
+        onPress={() => {
+          haptic.light();
+          swipeRef.current?.close();
+          onDelete(item.id);
+        }}
+        activeOpacity={0.85}
+      >
+        <Feather name="trash-2" size={20} color="#fff" />
+        <Text style={s.deleteTxt}>Remover</Text>
+      </TouchableOpacity>
     );
   }
 
   return (
-    <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
-
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Feather name="arrow-left" size={20} color={C.ink} />
-        </TouchableOpacity>
-        <View style={s.headerCenter}>
-          <Text style={s.titulo}>Carrinho</Text>
-          <Text style={s.restLabel}>{restaurante.emoji}  {restaurante.nome}</Text>
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      rightThreshold={40}
+      onSwipeableWillOpen={hapticSelection}
+    >
+      <View style={s.item}>
+        <Text style={s.itemEmoji}>{item.emoji}</Text>
+        <View style={s.itemInfo}>
+          <Text style={s.itemNome}>{item.nome}</Text>
+          <Text style={s.itemUnit}>{formatarPreco(item.preco)} / un.</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <View style={s.qtdChip}>
+          <Text style={s.qtdTxt}>{item.qtd}×</Text>
+        </View>
+        <Text style={[s.itemTotal, { color: cor }]}>
+          {formatarPreco(item.preco * item.qtd)}
+        </Text>
       </View>
+    </Swipeable>
+  );
+}
 
-      {/* ── Itens ── */}
-      <FlatList
-        data={itens}
-        keyExtractor={i => i.id}
-        contentContainerStyle={s.lista}
-        ItemSeparatorComponent={() => <View style={s.sep} />}
-        renderItem={({ item }) => (
-          <View style={s.item}>
-            <Text style={{ fontSize: 24, marginRight: 12 }}>{item.emoji}</Text>
-            <View style={s.itemInfo}>
-              <Text style={s.itemNome}>{item.nome}</Text>
-              <Text style={s.itemUnit}>{formatarPreco(item.preco)} / un.</Text>
-            </View>
-            <View style={s.qtdChip}>
-              <Text style={s.qtdTxt}>{item.qtd}×</Text>
-            </View>
-            <Text style={[s.itemTotal, { color: restaurante.cor }]}>
-              {formatarPreco(item.preco * item.qtd)}
-            </Text>
-          </View>
-        )}
-      />
+export default function CarrinhoScreen({ navigation }) {
+  const { usuario, atualizarPedidosCount } = useApp();
+  const { itens, restaurante, totalPreco, limpar, remover } = useCarrinho();
+  const [restauranteSnapshot, setRestauranteSnapshot] = useState(restaurante);
+  const [confirmando, setConfirmando] = useState(false);
+  const [cupom, setCupom] = useState('');
+  const [cupomAplicado, setCupomAplicado] = useState(false);
+  const [cupomErro, setCupomErro] = useState(false);
+  const [enderecoSel, setEnderecoSel] = useState(ENDERECOS_MOCK[0].id);
+  const [pagamentoSel, setPagamentoSel] = useState(PAGAMENTOS[0].id);
+  const [showBioOverlay, setShowBioOverlay] = useState(false);
+  const [bioStatus, setBioStatus] = useState('idle');
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
 
-      {/* ── Resumo + CTA ── */}
-      <View style={s.footer}>
-        <View style={s.resumo}>
-          <View style={s.linha}>
-            <Text style={s.linhaLabel}>Subtotal</Text>
-            <Text style={s.linhaVal}>{formatarPreco(subtotal)}</Text>
-          </View>
-          <View style={s.linha}>
-            <Text style={s.linhaLabel}>Entrega</Text>
-            <Text style={[s.linhaVal, taxaEntrega === 0 && s.gratis]}>
-              {taxaEntrega === 0 ? 'Grátis' : formatarPreco(taxaEntrega)}
-            </Text>
-          </View>
-          <View style={[s.linha, s.totalRow]}>
-            <Text style={s.totalLabel}>Total</Text>
-            <Text style={[s.totalVal, { color: restaurante.cor }]}>{formatarPreco(total)}</Text>
-          </View>
-        </View>
+  useEffect(() => {
+    if (restaurante) setRestauranteSnapshot(restaurante);
+  }, [restaurante]);
 
-        <View style={s.bioHint}>
-          <Ionicons name="finger-print" size={17} color={C.amber} />
-          <Text style={s.bioHintTxt}>Confirmação segura por biometria</Text>
-        </View>
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
 
-        <TouchableOpacity
-          style={[s.btn, { backgroundColor: restaurante.cor }, confirmando && s.btnOff]}
-          onPress={confirmarPedido}
-          disabled={confirmando || totalItens === 0}
-          activeOpacity={0.85}
-        >
-          {!confirmando && (
-            <Ionicons name="finger-print" size={20} color="#fff" style={{ marginRight: 10 }} />
+  const restauranteAtual = restaurante ?? restauranteSnapshot;
+  if (!restauranteAtual) return null;
+
+  const subtotal = totalPreco;
+  const taxaEntrega = itens.length === 0
+    ? 0
+    : restauranteAtual.entrega === 'Gratis' || restauranteAtual.entrega === 'Grátis'
+      ? 0
+      : parseFloat(restauranteAtual.entrega.replace('R$ ', '').replace(',', '.'));
+  const desconto = cupomAplicado ? subtotal * 0.1 : 0;
+  const total = Math.max(subtotal + taxaEntrega - desconto, 0);
+
+  function showToast(mensagem) {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({ mensagem });
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 3000);
+  }
+
+  function aplicarCupom() {
+    const codigo = cupom.trim().toUpperCase();
+    if (codigo === 'FOOME10') {
+      setCupomAplicado(true);
+      setCupomErro(false);
+      hapticSuccess();
+      return;
+    }
+
+    setCupomAplicado(false);
+    setCupomErro(true);
+    hapticError();
+  }
+
+  function removerCupom() {
+    setCupomAplicado(false);
+    setCupom('');
+    setCupomErro(false);
+    hapticSelection();
+  }
+
+  function removerItemCompleto(id) {
+    const item = itens.find(i => i.id === id);
+    if (!item) return;
+
+    for (let i = 0; i < item.qtd; i += 1) remover(id);
+    haptic.light();
+  }
+
+  function selecionarEndereco(id) {
+    setEnderecoSel(id);
+    hapticSelection();
+  }
+
+  function selecionarPagamento(id) {
+    setPagamentoSel(id);
+    hapticSelection();
+  }
+
+  async function confirmarPedido() {
+    if (itens.length === 0 || !usuario || confirmando) {
+      hapticError();
+      return;
+    }
+
+    haptic.light();
+    setConfirmando(true);
+    setShowBioOverlay(true);
+    setBioStatus('scanning');
+
+    try {
+      const result = await verificarBiometria();
+
+      if (!result.sucesso) {
+        setBioStatus('error');
+        hapticError();
+        await sleep(1000);
+        setShowBioOverlay(false);
+        setBioStatus('idle');
+        Alert.alert('Biometria necessária', 'Confirme sua identidade para finalizar.');
+        return;
+      }
+
+      setBioStatus('success');
+      hapticImpact();
+      await sleep(1200);
+
+      const endereco = ENDERECOS_MOCK.find(end => end.id === enderecoSel);
+      const pagamento = PAGAMENTOS.find(pag => pag.id === pagamentoSel);
+      const pedido = {
+        id: Date.now().toString(),
+        restaurante: restauranteAtual.nome,
+        restauranteCor: restauranteAtual.cor,
+        restauranteEmoji: restauranteAtual.emoji,
+        itens: itens.map(item => ({ ...item })),
+        subtotal,
+        taxaEntrega,
+        desconto,
+        total,
+        enderecoEntrega: endereco,
+        pagamento: pagamento?.label ?? 'PIX',
+        timestamp: new Date().toISOString(),
+        status: 'confirmado',
+      };
+
+      const anteriores = await getPedidos();
+      const pedidosAtualizados = [pedido, ...anteriores];
+      await salvarPedidos(pedidosAtualizados);
+      await atualizarPedidosCount(pedidosAtualizados);
+      hapticSuccess();
+
+      setShowBioOverlay(false);
+      setBioStatus('idle');
+      Alert.alert(
+        'Pedido confirmado!',
+        `${restauranteAtual.nome} · ${formatarPreco(total)}`,
+        [{
+          text: 'OK',
+          onPress: () => {
+            hapticSelection();
+            limpar();
+            navigation.popToTop();
+          },
+        }],
+      );
+    } catch (err) {
+      setBioStatus('error');
+      hapticError();
+      await sleep(700);
+      setShowBioOverlay(false);
+      setBioStatus('idle');
+      Alert.alert('Erro', 'Não foi possível confirmar o pedido. Tente novamente.');
+    } finally {
+      setConfirmando(false);
+    }
+  }
+
+  const renderCheckoutOptions = itens.length > 0 ? (
+    <View style={s.checkout}>
+      <Text style={s.sectionTitle}>Cupom de desconto</Text>
+      <View style={s.cupomRow}>
+        <View style={[s.cupomInput, cupomAplicado && s.cupomInputOk, cupomErro && s.cupomInputErr]}>
+          <Feather name="tag" size={16} color={cupomAplicado ? C.teal : C.ink3} />
+          <TextInput
+            style={s.cupomTxtInput}
+            placeholder="Cupom de desconto"
+            placeholderTextColor={C.ink4}
+            value={cupom}
+            onChangeText={(v) => {
+              setCupom(v);
+              setCupomErro(false);
+            }}
+            autoCapitalize="characters"
+            editable={!cupomAplicado}
+            returnKeyType="done"
+            onSubmitEditing={aplicarCupom}
+          />
+          {cupomAplicado && (
+            <Feather name="check-circle" size={16} color={C.teal} />
           )}
-          <Text style={s.btnTxt}>
-            {confirmando ? 'Aguardando...' : 'Confirmar pedido'}
-          </Text>
-        </TouchableOpacity>
+        </View>
+        {!cupomAplicado ? (
+          <TouchableOpacity
+            style={s.cupomBtn}
+            onPress={aplicarCupom}
+            activeOpacity={0.85}
+          >
+            <Text style={s.cupomBtnTxt}>Aplicar</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[s.cupomBtn, s.cupomBtnClear]}
+            onPress={removerCupom}
+            activeOpacity={0.85}
+          >
+            <Feather name="x" size={15} color={C.ink3} />
+          </TouchableOpacity>
+        )}
+      </View>
+      {cupomAplicado && (
+        <View style={s.cupomOk}>
+          <Feather name="check" size={12} color={C.teal} />
+          <Text style={s.cupomOkTxt}>10% de desconto aplicado!</Text>
+        </View>
+      )}
+      {cupomErro && (
+        <View style={s.cupomErr}>
+          <Feather name="alert-circle" size={12} color={C.brand} />
+          <Text style={s.cupomErrTxt}>Cupom inválido. Tente FOOME10</Text>
+        </View>
+      )}
+
+      <Text style={[s.sectionTitle, s.sectionGap]}>Endereço de entrega</Text>
+      {ENDERECOS_MOCK.map(end => {
+        const sel = enderecoSel === end.id;
+        return (
+          <TouchableOpacity
+            key={end.id}
+            style={[s.enderecoCard, sel && s.enderecoCardSel]}
+            onPress={() => selecionarEndereco(end.id)}
+            activeOpacity={0.82}
+          >
+            <View style={[s.radio, sel && s.radioSel]}>
+              {sel && <View style={s.radioDot} />}
+            </View>
+            <View style={s.endInfo}>
+              <View style={s.endTitleRow}>
+                <Feather name={end.icon} size={14} color={sel ? C.brand : C.ink3} />
+                <Text style={[s.endLabel, sel && s.endLabelSel]}>{end.label}</Text>
+              </View>
+              <Text style={s.endEndereco} numberOfLines={1}>{end.endereco}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+
+      <Text style={[s.sectionTitle, s.sectionGap]}>Forma de pagamento</Text>
+      <View style={s.pagamentoRow}>
+        {PAGAMENTOS.map(pag => {
+          const sel = pagamentoSel === pag.id;
+          return (
+            <TouchableOpacity
+              key={pag.id}
+              style={[s.pagamentoCard, sel && s.pagamentoCardSel]}
+              onPress={() => selecionarPagamento(pag.id)}
+              activeOpacity={0.82}
+            >
+              <View style={[s.radio, sel && s.radioSel]}>
+                {sel && <View style={s.radioDot} />}
+              </View>
+              <Feather name={pag.icon} size={18} color={sel ? pag.cor : C.ink3} />
+              <Text style={[s.pagamentoLabel, sel && s.pagamentoLabelSel]}>{pag.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
+  ) : null;
+
+  return (
+    <GestureHandlerRootView style={s.gestureRoot}>
+      <View style={s.root}>
+        <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
+
+        <View style={s.header}>
+          <TouchableOpacity
+            onPress={() => {
+              hapticSelection();
+              navigation.goBack();
+            }}
+            style={s.backBtn}
+            activeOpacity={0.8}
+          >
+            <Feather name="arrow-left" size={20} color={C.ink} />
+          </TouchableOpacity>
+          <View style={s.headerCenter}>
+            <Text style={s.titulo}>Carrinho</Text>
+            <Text style={s.restLabel}>{restauranteAtual.emoji}  {restauranteAtual.nome}</Text>
+          </View>
+          <View style={s.headerSpacer} />
+        </View>
+
+        <FlatList
+          data={itens}
+          keyExtractor={i => i.id}
+          contentContainerStyle={[s.lista, itens.length === 0 && s.listaVazia]}
+          ItemSeparatorComponent={() => <View style={s.sep} />}
+          renderItem={({ item }) => (
+            <SwipeableItem
+              item={item}
+              cor={restauranteAtual.cor}
+              onDelete={removerItemCompleto}
+            />
+          )}
+          ListFooterComponent={renderCheckoutOptions}
+          ListEmptyComponent={
+            <View style={s.vazio}>
+              <Feather name="shopping-bag" size={38} color={C.ink4} />
+              <Text style={s.vazioTitulo}>Carrinho vazio</Text>
+              <Text style={s.vazioSub}>Adicione itens do restaurante para continuar</Text>
+            </View>
+          }
+        />
+
+        <View style={s.footer}>
+          <View style={s.resumo}>
+            <View style={s.linha}>
+              <Text style={s.linhaLabel}>Subtotal</Text>
+              <Text style={s.linhaVal}>{formatarPreco(subtotal)}</Text>
+            </View>
+            <View style={s.linha}>
+              <Text style={s.linhaLabel}>Entrega</Text>
+              <Text style={[s.linhaVal, taxaEntrega === 0 && s.gratis]}>
+                {taxaEntrega === 0 ? 'Grátis' : formatarPreco(taxaEntrega)}
+              </Text>
+            </View>
+            {cupomAplicado && (
+              <View style={s.linha}>
+                <Text style={s.linhaLabel}>Cupom FOOME10</Text>
+                <Text style={s.descontoVal}>- {formatarPreco(desconto)}</Text>
+              </View>
+            )}
+            <View style={[s.linha, s.totalRow]}>
+              <Text style={s.totalLabel}>Total</Text>
+              <Text style={[s.totalVal, { color: restauranteAtual.cor }]}>{formatarPreco(total)}</Text>
+            </View>
+          </View>
+
+          <View style={s.bioHint}>
+            <Ionicons name="finger-print" size={17} color={C.amber} />
+            <Text style={s.bioHintTxt}>Confirmação segura por biometria</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[s.btn, { backgroundColor: restauranteAtual.cor }, confirmando && s.btnOff]}
+            onPress={confirmarPedido}
+            disabled={confirmando || itens.length === 0}
+            activeOpacity={0.85}
+          >
+            {!confirmando && (
+              <Ionicons name="finger-print" size={20} color="#fff" style={s.btnIcon} />
+            )}
+            <Text style={s.btnTxt}>
+              {confirmando ? 'Aguardando...' : 'Confirmar pedido'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {showBioOverlay && (
+          <Animated.View entering={FadeIn.duration(160)} style={s.bioOverlay}>
+            <View style={s.bioModal}>
+              {bioStatus === 'scanning' && (
+                <>
+                  <BioPulse />
+                  <Text style={s.bioModalTitle}>Confirmar identidade</Text>
+                  <Text style={s.bioModalSub}>Use sua digital ou Face ID</Text>
+                </>
+              )}
+              {bioStatus === 'success' && (
+                <Animated.View entering={ZoomIn.duration(240)} style={s.bioResult}>
+                  <View style={s.checkCircle}>
+                    <Feather name="check" size={40} color="#fff" />
+                  </View>
+                  <Text style={s.bioModalTitle}>Confirmado!</Text>
+                </Animated.View>
+              )}
+              {bioStatus === 'error' && (
+                <Animated.View entering={ZoomIn.duration(220)} style={s.bioResult}>
+                  <View style={[s.checkCircle, s.errorCircle]}>
+                    <Feather name="x" size={40} color="#fff" />
+                  </View>
+                  <Text style={s.bioModalTitle}>Falha na verificação</Text>
+                </Animated.View>
+              )}
+            </View>
+          </Animated.View>
+        )}
+
+        {toast && (
+          <Animated.View
+            style={s.toast}
+            entering={SlideInDown.duration(220)}
+            exiting={SlideOutDown.duration(180)}
+          >
+            <Feather name="check-circle" size={20} color={C.teal} />
+            <Text style={s.toastTxt}>{toast.mensagem}</Text>
+          </Animated.View>
+        )}
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const s = StyleSheet.create({
+  gestureRoot: { flex: 1 },
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {
@@ -165,12 +544,14 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  headerCenter: { alignItems: 'center' },
-  titulo:    { fontFamily: F.heading,  fontSize: 17, color: C.ink },
-  restLabel: { fontFamily: F.regular,  fontSize: 12, color: C.ink3, marginTop: 2 },
+  headerCenter: { alignItems: 'center', flex: 1 },
+  headerSpacer: { width: 40 },
+  titulo: { fontFamily: F.heading, fontSize: 17, color: C.ink },
+  restLabel: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 2 },
 
-  lista: { padding: 16 },
-  sep:   { height: 8 },
+  lista: { padding: 16, paddingBottom: 20 },
+  listaVazia: { flexGrow: 1 },
+  sep: { height: 8 },
 
   item: {
     flexDirection: 'row',
@@ -180,9 +561,10 @@ const s = StyleSheet.create({
     padding: 14,
     ...SHADOW.card,
   },
+  itemEmoji: { fontSize: 24, marginRight: 12 },
   itemInfo: { flex: 1 },
   itemNome: { fontFamily: F.semibold, fontSize: 14, color: C.ink },
-  itemUnit: { fontFamily: F.regular,  fontSize: 12, color: C.ink3, marginTop: 2 },
+  itemUnit: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 2 },
   qtdChip: {
     backgroundColor: C.bg,
     borderRadius: 8,
@@ -192,8 +574,143 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  qtdTxt:   { fontFamily: F.bold, fontSize: 13, color: C.ink2 },
+  qtdTxt: { fontFamily: F.bold, fontSize: 13, color: C.ink2 },
   itemTotal: { fontFamily: F.bold, fontSize: 15, minWidth: 72, textAlign: 'right' },
+
+  deleteAction: {
+    width: 104,
+    marginLeft: 8,
+    borderRadius: 16,
+    backgroundColor: C.brand,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    ...SHADOW.card,
+  },
+  deleteTxt: { fontFamily: F.bold, fontSize: 12, color: '#fff' },
+
+  checkout: { paddingTop: 18 },
+  sectionTitle: {
+    fontFamily: F.heading,
+    fontSize: 15,
+    color: C.ink,
+    marginBottom: 10,
+  },
+  sectionGap: { marginTop: 18 },
+
+  cupomRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cupomInput: {
+    flex: 1,
+    height: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 12,
+  },
+  cupomInputOk: { borderColor: C.teal, backgroundColor: C.tealLight },
+  cupomInputErr: { borderColor: C.brandBorder, backgroundColor: C.brandLight },
+  cupomTxtInput: {
+    flex: 1,
+    fontFamily: F.regular,
+    fontSize: 14,
+    color: C.ink,
+    paddingVertical: 0,
+  },
+  cupomBtn: {
+    height: 46,
+    minWidth: 82,
+    borderRadius: 14,
+    backgroundColor: C.brand,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+  },
+  cupomBtnClear: {
+    minWidth: 46,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  cupomBtnTxt: { fontFamily: F.heading, fontSize: 13, color: '#fff' },
+  cupomOk: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+  },
+  cupomOkTxt: { fontFamily: F.medium, fontSize: 12, color: C.teal },
+  cupomErr: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+  },
+  cupomErrTxt: { fontFamily: F.medium, fontSize: 12, color: C.brand },
+
+  enderecoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 12,
+    marginBottom: 8,
+  },
+  enderecoCardSel: { borderColor: C.brandBorder, backgroundColor: C.brandLight },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: C.ink4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioSel: { borderColor: C.brand },
+  radioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.brand,
+  },
+  endInfo: { flex: 1 },
+  endTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  endLabel: { fontFamily: F.semibold, fontSize: 13, color: C.ink2 },
+  endLabelSel: { color: C.brand },
+  endEndereco: { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
+
+  pagamentoRow: { flexDirection: 'row', gap: 8 },
+  pagamentoCard: {
+    flex: 1,
+    minHeight: 88,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 10,
+  },
+  pagamentoCardSel: { borderColor: C.brandBorder, backgroundColor: C.brandLight },
+  pagamentoLabel: { fontFamily: F.semibold, fontSize: 12, color: C.ink2 },
+  pagamentoLabelSel: { color: C.brand },
+
+  vazio: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    gap: 8,
+  },
+  vazioTitulo: { fontFamily: F.heading, fontSize: 17, color: C.ink2 },
+  vazioSub: { fontFamily: F.regular, fontSize: 13, color: C.ink3, textAlign: 'center' },
 
   footer: {
     backgroundColor: C.surface,
@@ -204,10 +721,11 @@ const s = StyleSheet.create({
     borderTopColor: C.border,
   },
   resumo: { marginBottom: 14 },
-  linha:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  linha: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   linhaLabel: { fontFamily: F.regular, fontSize: 14, color: C.ink3 },
-  linhaVal:   { fontFamily: F.semibold, fontSize: 14, color: C.ink2 },
-  gratis:     { color: C.teal },
+  linhaVal: { fontFamily: F.semibold, fontSize: 14, color: C.ink2 },
+  gratis: { color: C.teal },
+  descontoVal: { fontFamily: F.semibold, fontSize: 14, color: C.teal },
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: C.border,
@@ -215,8 +733,8 @@ const s = StyleSheet.create({
     marginTop: 4,
     marginBottom: 0,
   },
-  totalLabel: { fontFamily: F.heading,  fontSize: 16, color: C.ink },
-  totalVal:   { fontFamily: F.headingLg, fontSize: 22 },
+  totalLabel: { fontFamily: F.heading, fontSize: 16, color: C.ink },
+  totalVal: { fontFamily: F.headingLg, fontSize: 22 },
 
   bioHint: {
     flexDirection: 'row',
@@ -239,6 +757,81 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOW.float,
   },
+  btnIcon: { marginRight: 10 },
   btnTxt: { fontFamily: F.heading, fontSize: 16, color: '#fff' },
   btnOff: { opacity: 0.55 },
+
+  bioOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  bioModal: {
+    width: '100%',
+    maxWidth: 320,
+    minHeight: 230,
+    borderRadius: 22,
+    backgroundColor: C.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    ...SHADOW.float,
+  },
+  fingerprintOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: C.brandLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: C.brandBorder,
+  },
+  bioModalTitle: {
+    fontFamily: F.heading,
+    fontSize: 18,
+    color: C.ink,
+    textAlign: 'center',
+  },
+  bioModalSub: {
+    fontFamily: F.regular,
+    fontSize: 13,
+    color: C.ink3,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  bioResult: { alignItems: 'center' },
+  checkCircle: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: C.teal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  errorCircle: { backgroundColor: C.brand },
+
+  toast: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: Platform.OS === 'ios' ? 190 : 172,
+    zIndex: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    ...SHADOW.float,
+  },
+  toastTxt: { fontFamily: F.heading, fontSize: 14, color: C.ink, flex: 1 },
 });
