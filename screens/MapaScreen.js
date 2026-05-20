@@ -20,6 +20,9 @@ export default function MapaScreen({ navigation }) {
   const [buscando, setBuscando] = useState(true);
   const [selecionado, setSelecionado] = useState(null);
   const [filtroCat, setFiltroCat] = useState(null);
+  const [userLoc, setUserLoc] = useState(null);
+  const [locStatus, setLocStatus] = useState('loading');
+  const [showFiltro, setShowFiltro] = useState(false);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
   const markersFiltrados = filtroCat
