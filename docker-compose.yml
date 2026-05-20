@@ -1,0 +1,11 @@
+services:
+  foome-landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    ports:
+      - "${FOOME_LANDING_PORT:-3000}:3000"
+    restart: unless-stopped
+    container_name: foome_landing
+    environment:
+      - NODE_ENV=production
