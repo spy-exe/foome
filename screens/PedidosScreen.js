@@ -18,12 +18,25 @@ function formatarData(iso) {
 }
 
 export default function PedidosScreen({ navigation }) {
-  const { usuario } = useApp();
+  const { usuario, atualizarPedidosCount } = useApp();
   const [pedidos, setPedidos] = useState([]);
 
   useFocusEffect(useCallback(() => {
-    getPedidos().then(setPedidos);
-  }, [usuario?.email]));
+    let ativo = true;
+
+    async function carregarPedidos() {
+      const pedidosCarregados = await getPedidos();
+      if (!ativo) return;
+      setPedidos(pedidosCarregados);
+      atualizarPedidosCount(pedidosCarregados);
+    }
+
+    carregarPedidos();
+
+    return () => {
+      ativo = false;
+    };
+  }, [usuario?.email, atualizarPedidosCount]));
 
   return (
     <View style={s.root}>

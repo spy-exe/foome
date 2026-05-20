@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { C, F } from '../constants/theme';
 import HomeStack from './HomeStack';
+import PedidosTabIcon from './PedidosTabIcon';
 import MapaScreen from '../screens/MapaScreen';
 import PedidosScreen from '../screens/PedidosScreen';
 import PerfilScreen from '../screens/PerfilScreen';
@@ -69,7 +70,7 @@ export default function TabNavigator() {
         options={{
           tabBarLabel: 'Pedidos',
           tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon color={color} focused={focused} name="receipt" outlineName="receipt-outline" size={size} />
+            <PedidosTabIcon color={color} focused={focused} size={size} />
           ),
         }}
       />

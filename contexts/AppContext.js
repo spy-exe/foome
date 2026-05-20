@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { getUsuario, removerUsuario, salvarUsuario } from '../services/storage';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+} from 'react';
+import { getPedidos, getUsuario, removerUsuario, salvarUsuario } from '../services/storage';
 
 const AppContext = createContext(null);
 
 const initialState = {
   usuario: null,
   carregando: true,
+  pedidosCount: 0,
 };
 
 function reducer(state, action) {
@@ -13,11 +20,13 @@ function reducer(state, action) {
     case 'LOGIN':
       return { ...state, usuario: action.payload, carregando: false };
     case 'LOGOUT':
-      return { ...state, usuario: null, carregando: false };
+      return { ...state, usuario: null, carregando: false, pedidosCount: 0 };
     case 'CARREGADO':
       return { ...state, usuario: action.payload, carregando: false };
     case 'ATUALIZAR_USUARIO':
       return { ...state, usuario: action.payload, carregando: false };
+    case 'SET_PEDIDOS_COUNT':
+      return { ...state, pedidosCount: action.payload };
     default:
       return state;
   }
@@ -27,16 +36,45 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    getUsuario()
-      .then(usuario => {
-        dispatch({ type: 'CARREGADO', payload: usuario });
-      })
-      .catch(() => {
-        dispatch({ type: 'CARREGADO', payload: null });
-      });
+    let ativo = true;
+
+    async function carregar() {
+      let usuario = null;
+      let pedidos = [];
+
+      try {
+        usuario = await getUsuario();
+      } catch {
+        usuario = null;
+      }
+
+      try {
+        pedidos = await getPedidos();
+      } catch {
+        pedidos = [];
+      }
+
+      if (!ativo) return;
+      dispatch({ type: 'CARREGADO', payload: usuario });
+      dispatch({ type: 'SET_PEDIDOS_COUNT', payload: pedidos.length });
+    }
+
+    carregar();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   const login = (usuario) => dispatch({ type: 'LOGIN', payload: usuario });
+
+  const atualizarPedidosCount = useCallback(async (pedidosCarregados) => {
+    const pedidos = Array.isArray(pedidosCarregados)
+      ? pedidosCarregados
+      : await getPedidos();
+    dispatch({ type: 'SET_PEDIDOS_COUNT', payload: pedidos.length });
+    return pedidos.length;
+  }, []);
 
   const atualizarUsuario = async (usuarioAtualizado) => {
     await salvarUsuario(usuarioAtualizado);
@@ -50,7 +88,9 @@ export function AppProvider({ children }) {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, atualizarUsuario, login, logout }}>
+    <AppContext.Provider
+      value={{ ...state, atualizarPedidosCount, atualizarUsuario, login, logout }}
+    >
       {children}
     </AppContext.Provider>
   );
@@ -60,4 +100,8 @@ export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp deve ser usado dentro de AppProvider');
   return ctx;
+}
+
+export function usePedidosCount() {
+  return useApp().pedidosCount;
 }

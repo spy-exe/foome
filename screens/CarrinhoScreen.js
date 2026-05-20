@@ -12,7 +12,7 @@ import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 
 export default function CarrinhoScreen({ navigation }) {
-  const { usuario } = useApp();
+  const { usuario, atualizarPedidosCount } = useApp();
   const { itens, restaurante, totalPreco, totalItens, limpar } = useCarrinho();
   const [confirmando, setConfirmando] = useState(false);
 
@@ -45,7 +45,9 @@ export default function CarrinhoScreen({ navigation }) {
       status: 'confirmado',
     };
     const anteriores = await getPedidos();
-    await salvarPedidos([pedido, ...anteriores]);
+    const pedidosAtualizados = [pedido, ...anteriores];
+    await salvarPedidos(pedidosAtualizados);
+    await atualizarPedidosCount(pedidosAtualizados);
     Alert.alert(
       'Pedido confirmado!',
       `${restaurante.nome} · ${formatarPreco(total)}`,
