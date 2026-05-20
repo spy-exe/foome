@@ -234,28 +234,6 @@ export default function PedidosScreen({ navigation }) {
     });
   }, [navigation, pedidos.length]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPedidos(prev => {
-        let mudou = false;
-        const novos = prev.map(pedido => {
-          const statusAtual = pedido.status || 'confirmado';
-          const proximo = PROXIMO_STATUS[statusAtual];
-
-          if (!proximo) return pedido;
-          mudou = true;
-          return { ...pedido, status: proximo };
-        });
-
-        if (!mudou) return prev;
-        salvarPedidos(novos).catch(() => {});
-        return novos;
-      });
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
