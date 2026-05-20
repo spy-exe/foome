@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { formatarPreco } from '../services/dados';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, SHADOW } from '../constants/theme';
 
 const ETAPAS = [
@@ -30,6 +31,7 @@ function formatarDataCompleta(iso) {
 }
 
 export default function DetalhePedidoScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const pedido = route.params.pedido;
   const [status, setStatus] = useState(
     ETAPAS.some(etapa => etapa.key === pedido.status) ? pedido.status : 'confirmado',
@@ -67,7 +69,7 @@ export default function DetalhePedidoScreen({ route, navigation }) {
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
 
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 14 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <Feather name="arrow-left" size={20} color={C.ink} />
         </TouchableOpacity>
@@ -162,7 +164,6 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: C.surface,
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 56 : 44,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
