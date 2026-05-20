@@ -168,36 +168,36 @@ export default function MapaScreen({ navigation }) {
             coordinate={{ latitude: rest.lat, longitude: rest.lng }}
             onPress={() => onPin(rest)}
           >
-            <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: CORES_CATEGORIA[rest.categoria] ?? '#E8452C',
-              borderWidth: 3,
-              borderColor: '#FFFFFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 5,
-            }}>
-              <Text style={{ fontSize: 20 }}>
-                {EMOJI_CATEGORIA[rest.categoria] ?? '🍽️'}
-              </Text>
+            <View style={{ padding: 4, overflow: 'visible' }}>
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: CORES_CATEGORIA[rest.categoria] ?? '#E8452C',
+                borderWidth: 2.5,
+                borderColor: '#FFFFFF',
+                alignItems: 'center',
+                justifyContent: 'center',
+                elevation: 4,
+              }}>
+                <Text style={{ fontSize: 18, lineHeight: 22 }}>
+                  {EMOJI_CATEGORIA[rest.categoria] ?? '🍽️'}
+                </Text>
+              </View>
             </View>
           </Marker>
         ))}
 
         {userLoc && locStatus === 'granted' && (
           <Marker coordinate={{ latitude: userLoc.latitude, longitude: userLoc.longitude }}>
-            <View style={{
-              width: 20, height: 20, borderRadius: 10,
-              backgroundColor: '#2563EB',
-              borderWidth: 3, borderColor: '#FFFFFF',
-              elevation: 6,
-            }} />
+            <View style={{ padding: 4, overflow: 'visible' }}>
+              <View style={{
+                width: 24, height: 24, borderRadius: 12,
+                backgroundColor: '#2563EB',
+                borderWidth: 3, borderColor: '#FFFFFF',
+                elevation: 6,
+              }} />
+            </View>
           </Marker>
         )}
       </MapView>

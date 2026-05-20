@@ -325,7 +325,10 @@ export default function PedidosScreen({ navigation }) {
                     style={s.acompanharBtn}
                     onPress={() => {
                       haptic.select();
-                      navigation.navigate('Rastreamento', { pedido: item });
+                      navigation.navigate('Inicio', {
+                        screen: 'Rastreamento',
+                        params: { pedido: item },
+                      });
                     }}
                     activeOpacity={0.8}
                   >
