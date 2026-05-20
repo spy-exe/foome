@@ -123,9 +123,12 @@ export default function PedidosScreen({ navigation, route }) {
                   <Text style={s.qtdLabel}>
                     {item.itens.reduce((s, i) => s + i.qtd, 0)} itens
                   </Text>
-                  <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
-                    {formatarPreco(item.total)}
-                  </Text>
+                  <View style={s.cardTotalWrap}>
+                    <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
+                      {formatarPreco(item.total)}
+                    </Text>
+                    <Feather name="chevron-right" size={16} color={C.ink4} />
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -232,6 +235,7 @@ const s = StyleSheet.create({
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   qtdLabel:   { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
+  cardTotalWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardTotal:  { fontFamily: F.headingLg, fontSize: 18 },
 
   vazio: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 32 },
