@@ -46,11 +46,16 @@ export default function CarrinhoScreen({ navigation }) {
     };
     const anteriores = await getPedidos();
     await salvarPedidos([pedido, ...anteriores]);
-    limpar();
     Alert.alert(
       'Pedido confirmado!',
       `${restaurante.nome} · ${formatarPreco(total)}`,
-      [{ text: 'Ver pedidos', onPress: () => navigation.navigate('Pedidos') }],
+      [{
+        text: 'OK',
+        onPress: () => {
+          limpar();
+          navigation.popToTop();
+        },
+      }],
     );
   }
 

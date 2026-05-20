@@ -92,7 +92,7 @@ export default function PedidosScreen({ navigation }) {
             <Text style={s.vazioSub}>Seus pedidos confirmados aparecem aqui</Text>
             <TouchableOpacity
               style={s.vazioBtn}
-              onPress={() => navigation.navigate('Home')}
+              onPress={() => navigation.navigate('HomeTab', { screen: 'Home' })}
             >
               <Text style={s.vazioBtnTxt}>Explorar restaurantes</Text>
               <Feather name="arrow-right" size={15} color="#fff" />

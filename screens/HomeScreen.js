@@ -82,7 +82,7 @@ export default function HomeScreen({ navigation }) {
           </View>
           <TouchableOpacity
             style={s.mapaBtn}
-            onPress={() => navigation.navigate('Mapa')}
+            onPress={() => navigation.navigate('MapaTab')}
           >
             <Feather name="map" size={18} color={C.brand} />
           </TouchableOpacity>
@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }) {
           {!busca && (
             <TouchableOpacity
               style={s.mapaLink}
-              onPress={() => navigation.navigate('Mapa')}
+              onPress={() => navigation.navigate('MapaTab')}
             >
               <Feather name="map-pin" size={12} color={C.brand} />
               <Text style={s.mapaLinkTxt}>Ver no mapa</Text>
