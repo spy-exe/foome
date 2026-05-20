@@ -26,15 +26,26 @@ const CATEGORIAS_MAPA = [
   { id: 'Açaí', label: '🍇 Açaí' },
 ];
 
-const CATEGORIA_CORES = {
+const EMOJI_CATEGORIA = {
+  'Hambúrgueres': '🍔',
+  'Pizzas':       '🍕',
+  'Japonês':      '🍣',
+  'Mexicano':     '🌮',
+  'Saudável':     '🥗',
+  'Massas':       '🍝',
+  'Churrasco':    '🥩',
+  'Açaí':         '🍇',
+};
+
+const CORES_CATEGORIA = {
   'Hambúrgueres': '#E8452C',
-  'Pizzas': '#F59E0B',
-  'Japonês': '#8B5CF6',
-  'Mexicano': '#10B981',
-  'Saudável': '#06B6D4',
-  'Massas': '#F97316',
-  'Churrasco': '#EF4444',
-  'Açaí': '#6D28D9',
+  'Pizzas':       '#F59E0B',
+  'Japonês':      '#8B5CF6',
+  'Mexicano':     '#10B981',
+  'Saudável':     '#06B6D4',
+  'Massas':       '#F97316',
+  'Churrasco':    '#EF4444',
+  'Açaí':         '#6D28D9',
 };
 
 export default function MapaScreen({ navigation }) {
@@ -148,36 +159,47 @@ export default function MapaScreen({ navigation }) {
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={regiaoInicial}
-        showsUserLocation={locStatus === 'granted'}
         showsMyLocationButton={false}
         onPress={fechar}
       >
-        {markersFiltrados.map(rest => {
-          const cor = CATEGORIA_CORES[rest.categoria] || C.brand;
-          const ativo = selecionado?.id === rest.id;
-          return (
-            <Marker
-              key={rest.id}
-              coordinate={{ latitude: rest.lat, longitude: rest.lng }}
-              onPress={() => onPin(rest)}
-              tracksViewChanges={false}
-            >
-              <View style={s.pinWrapper}>
-                <View style={[
-                  s.pin,
-                  { borderColor: cor },
-                  ativo && {
-                    borderWidth: 3,
-                    backgroundColor: `${cor}18`,
-                  },
-                ]}>
-                  <Text style={s.pinEmoji}>{rest.emoji}</Text>
-                </View>
-                <View style={[s.pinPoint, { borderTopColor: cor }]} />
-              </View>
-            </Marker>
-          );
-        })}
+        {markersFiltrados.map(rest => (
+          <Marker
+            key={rest.id}
+            coordinate={{ latitude: rest.lat, longitude: rest.lng }}
+            onPress={() => onPin(rest)}
+          >
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: CORES_CATEGORIA[rest.categoria] ?? '#E8452C',
+              borderWidth: 3,
+              borderColor: '#FFFFFF',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 5,
+            }}>
+              <Text style={{ fontSize: 20 }}>
+                {EMOJI_CATEGORIA[rest.categoria] ?? '🍽️'}
+              </Text>
+            </View>
+          </Marker>
+        ))}
+
+        {userLoc && locStatus === 'granted' && (
+          <Marker coordinate={{ latitude: userLoc.latitude, longitude: userLoc.longitude }}>
+            <View style={{
+              width: 20, height: 20, borderRadius: 10,
+              backgroundColor: '#2563EB',
+              borderWidth: 3, borderColor: '#FFFFFF',
+              elevation: 6,
+            }} />
+          </Marker>
+        )}
       </MapView>
 
       {/* ── Header flutuante ── */}
