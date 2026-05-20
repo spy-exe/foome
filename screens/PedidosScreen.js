@@ -9,6 +9,13 @@ import { getPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
 import { C, F, SHADOW } from '../constants/theme';
 
+const STATUS_CONFIG = {
+  confirmado: { label: 'Confirmado', cor: C.teal, bg: C.tealLight, icon: 'check-circle' },
+  preparando: { label: 'Em preparo', cor: C.amber, bg: C.amberLight, icon: 'clock' },
+  a_caminho: { label: 'A caminho', cor: '#2563EB', bg: '#EFF6FF', icon: 'truck' },
+  entregue: { label: 'Entregue', cor: C.ink3, bg: C.bg, icon: 'package' },
+};
+
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit', month: 'short',
@@ -41,47 +48,51 @@ export default function PedidosScreen({ navigation, route }) {
         data={pedidos}
         keyExtractor={i => i.id}
         contentContainerStyle={s.lista}
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <View style={[s.accent, { backgroundColor: item.restauranteCor ?? C.brand }]} />
-            <View style={s.cardBody}>
-              <View style={s.cardTop}>
-                <View style={s.cardTitle}>
-                  <Text style={{ fontSize: 18, marginRight: 8 }}>{item.restauranteEmoji ?? '🍽️'}</Text>
-                  <Text style={s.restNome}>{item.restaurante}</Text>
-                </View>
-                <View style={s.statusBadge}>
-                  <Feather name="check" size={11} color={C.teal} />
-                  <Text style={s.statusTxt}>Confirmado</Text>
-                </View>
-              </View>
+        renderItem={({ item }) => {
+          const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.confirmado;
 
-              <Text style={s.cardData}>{formatarData(item.timestamp)}</Text>
-
-              <View style={s.chips}>
-                {item.itens.slice(0, 3).map(it => (
-                  <View key={it.id} style={s.chip}>
-                    <Text style={s.chipTxt}>{it.qtd}× {it.nome}</Text>
+          return (
+            <View style={s.card}>
+              <View style={[s.accent, { backgroundColor: item.restauranteCor ?? C.brand }]} />
+              <View style={s.cardBody}>
+                <View style={s.cardTop}>
+                  <View style={s.cardTitle}>
+                    <Text style={{ fontSize: 18, marginRight: 8 }}>{item.restauranteEmoji ?? '🍽️'}</Text>
+                    <Text style={s.restNome}>{item.restaurante}</Text>
                   </View>
-                ))}
-                {item.itens.length > 3 && (
-                  <View style={s.chip}>
-                    <Text style={s.chipTxt}>+{item.itens.length - 3}</Text>
+                  <View style={[s.statusBadge, { backgroundColor: status.bg }]}>
+                    <Feather name={status.icon} size={11} color={status.cor} />
+                    <Text style={[s.statusTxt, { color: status.cor }]}>{status.label}</Text>
                   </View>
-                )}
-              </View>
+                </View>
 
-              <View style={s.cardFooter}>
-                <Text style={s.qtdLabel}>
-                  {item.itens.reduce((s, i) => s + i.qtd, 0)} itens
-                </Text>
-                <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
-                  {formatarPreco(item.total)}
-                </Text>
+                <Text style={s.cardData}>{formatarData(item.timestamp)}</Text>
+
+                <View style={s.chips}>
+                  {item.itens.slice(0, 3).map(it => (
+                    <View key={it.id} style={s.chip}>
+                      <Text style={s.chipTxt}>{it.qtd}× {it.nome}</Text>
+                    </View>
+                  ))}
+                  {item.itens.length > 3 && (
+                    <View style={s.chip}>
+                      <Text style={s.chipTxt}>+{item.itens.length - 3}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={s.cardFooter}>
+                  <Text style={s.qtdLabel}>
+                    {item.itens.reduce((s, i) => s + i.qtd, 0)} itens
+                  </Text>
+                  <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
+                    {formatarPreco(item.total)}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          );
+        }}
         ListEmptyComponent={
           <View style={s.vazio}>
             <View style={s.vazioIcon}>
