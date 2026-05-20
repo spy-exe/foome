@@ -7,13 +7,16 @@ import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { RESTAURANTES } from '../services/dados';
+import { useApp } from '../contexts/AppContext';
+import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 
 const CARD_H   = 210;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
-export default function MapaScreen({ navigation, route }) {
-  const usuario = route?.params?.usuario || {};
+export default function MapaScreen({ navigation }) {
+  const { usuario } = useApp();
+  const { setRestaurante } = useCarrinho();
   const [locOk,    setLocOk]    = useState(false);
   const [buscando, setBuscando] = useState(true);
   const [selecionado, setSelecionado] = useState(null);
@@ -128,7 +131,11 @@ export default function MapaScreen({ navigation, route }) {
             </View>
             <TouchableOpacity
               style={[s.sheetBtn, { backgroundColor: selecionado.cor }]}
-              onPress={() => navigation.navigate('Restaurante', { restaurante: selecionado, usuario })}
+              onPress={() => {
+                if (!usuario) return;
+                setRestaurante(selecionado);
+                navigation.navigate('Restaurante', { restaurante: selecionado });
+              }}
               activeOpacity={0.85}
             >
               <Text style={s.sheetBtnTxt}>Ver cardápio</Text>

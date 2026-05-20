@@ -6,6 +6,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Feather } from '@expo/vector-icons';
 import { salvarUsuario } from '../services/storage';
+import { useApp } from '../contexts/AppContext';
 import { C, F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
@@ -19,6 +20,7 @@ export default function CadastroScreen({ navigation }) {
   const [fotoUri, setFotoUri]     = useState(null);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
+  const { login } = useApp();
 
   async function tirarFoto() {
     if (!cameraRef.current) return;
@@ -36,8 +38,9 @@ export default function CadastroScreen({ navigation }) {
       Alert.alert('Foto obrigatória', 'Tire uma foto de perfil para continuar.');
       return;
     }
-    await salvarUsuario({ nome, email, senha, fotoUri, criadoEm: new Date().toISOString() });
-    navigation.replace('Login');
+    const usuario = { nome, email, senha, fotoUri, criadoEm: new Date().toISOString() };
+    await salvarUsuario(usuario);
+    login(usuario);
   }
 
   // ── Câmera: permissão negada ──

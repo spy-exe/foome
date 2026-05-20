@@ -7,19 +7,26 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { verificarBiometria } from '../services/biometria';
 import { salvarPedidos, getPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
+import { useApp } from '../contexts/AppContext';
+import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 
-export default function CarrinhoScreen({ route, navigation }) {
-  const { carrinho, restaurante, usuario } = route.params;
+export default function CarrinhoScreen({ navigation }) {
+  const { usuario } = useApp();
+  const { itens, restaurante, totalPreco, totalItens, limpar } = useCarrinho();
   const [confirmando, setConfirmando] = useState(false);
 
-  const subtotal    = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+  if (!restaurante) return null;
+
+  const subtotal    = totalPreco;
   const taxaEntrega = restaurante.entrega === 'Grátis'
     ? 0
     : parseFloat(restaurante.entrega.replace('R$ ', '').replace(',', '.'));
   const total = subtotal + taxaEntrega;
 
   async function confirmarPedido() {
+    if (totalItens === 0 || !usuario) return;
+
     setConfirmando(true);
     const result = await verificarBiometria();
     setConfirmando(false);
@@ -32,17 +39,18 @@ export default function CarrinhoScreen({ route, navigation }) {
       restaurante:       restaurante.nome,
       restauranteCor:    restaurante.cor,
       restauranteEmoji:  restaurante.emoji,
-      itens: carrinho,
+      itens: itens.map(item => ({ ...item })),
       total,
       timestamp: new Date().toISOString(),
       status: 'confirmado',
     };
     const anteriores = await getPedidos();
     await salvarPedidos([pedido, ...anteriores]);
+    limpar();
     Alert.alert(
       'Pedido confirmado!',
       `${restaurante.nome} · ${formatarPreco(total)}`,
-      [{ text: 'Ver pedidos', onPress: () => navigation.navigate('Pedidos', { usuario }) }],
+      [{ text: 'Ver pedidos', onPress: () => navigation.navigate('Pedidos') }],
     );
   }
 
@@ -64,7 +72,7 @@ export default function CarrinhoScreen({ route, navigation }) {
 
       {/* ── Itens ── */}
       <FlatList
-        data={carrinho}
+        data={itens}
         keyExtractor={i => i.id}
         contentContainerStyle={s.lista}
         ItemSeparatorComponent={() => <View style={s.sep} />}
@@ -112,7 +120,7 @@ export default function CarrinhoScreen({ route, navigation }) {
         <TouchableOpacity
           style={[s.btn, { backgroundColor: restaurante.cor }, confirmando && s.btnOff]}
           onPress={confirmarPedido}
-          disabled={confirmando}
+          disabled={confirmando || totalItens === 0}
           activeOpacity={0.85}
         >
           {!confirmando && (

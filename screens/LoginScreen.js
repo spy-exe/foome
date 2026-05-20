@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, Alert, StatusBar, Image,
   Platform, KeyboardAvoidingView, ScrollView,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { getUsuario } from '../services/storage';
 import { verificarBiometria } from '../services/biometria';
+import { useApp } from '../contexts/AppContext';
 import { C, F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
@@ -15,14 +15,12 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail]           = useState('');
   const [senha, setSenha]           = useState('');
   const [verSenha, setVerSenha]     = useState(false);
-  const [usuario, setUsuario]       = useState(null);
-
-  useEffect(() => { getUsuario().then(setUsuario); }, []);
+  const { usuario, login } = useApp();
 
   async function loginComBiometria() {
     if (!usuario) { Alert.alert('Sem conta', 'Crie uma conta primeiro.'); return; }
     const r = await verificarBiometria();
-    if (r.sucesso) navigation.replace('App', { usuario });
+    if (r.sucesso) login(usuario);
     else Alert.alert('Biometria', r.erro || 'Não foi possível autenticar.');
   }
 
@@ -32,7 +30,7 @@ export default function LoginScreen({ navigation }) {
       Alert.alert('Dados incorretos', 'E-mail ou senha inválidos.');
       return;
     }
-    navigation.replace('App', { usuario });
+    login(usuario);
   }
 
   return (

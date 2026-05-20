@@ -42,7 +42,11 @@ function reducer(state, action) {
       };
     }
     case 'SET_RESTAURANTE':
-      return { ...state, restaurante: action.payload };
+      if (!action.payload) return initialState;
+      if (state.restaurante?.id === action.payload.id) {
+        return { ...state, restaurante: action.payload };
+      }
+      return { itens: [], restaurante: action.payload };
     case 'LIMPAR':
       return initialState;
     default:

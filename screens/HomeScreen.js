@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { RESTAURANTES } from '../services/dados';
+import { useApp } from '../contexts/AppContext';
+import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
 
@@ -19,8 +21,9 @@ const CATEGORIAS = [
   { key: 'Açaí',         label: 'Açaí',      icon: 'cafe-outline'       },
 ];
 
-export default function HomeScreen({ navigation, route }) {
-  const usuario = route?.params?.usuario || {};
+export default function HomeScreen({ navigation }) {
+  const { usuario } = useApp();
+  const { setRestaurante } = useCarrinho();
   const [busca, setBusca]     = useState('');
   const [catAtiva, setCatAtiva] = useState(null);
 
@@ -40,14 +43,14 @@ export default function HomeScreen({ navigation, route }) {
         <View style={s.headerTop}>
           <View>
             <Text style={s.greeting}>
-              Olá, {usuario.nome?.split(' ')[0] || 'visitante'}
+              Olá, {usuario?.nome?.split(' ')[0] || 'visitante'}
             </Text>
             <View style={s.locRow}>
               <Feather name="map-pin" size={11} color={C.ink3} />
               <Text style={s.loc}>Vassouras, RJ</Text>
             </View>
           </View>
-          {usuario.fotoUri
+          {usuario?.fotoUri
             ? <Image source={{ uri: usuario.fotoUri }} style={s.avatar} />
             : (
               <View style={[s.avatar, s.avatarFallback]}>
@@ -79,7 +82,7 @@ export default function HomeScreen({ navigation, route }) {
           </View>
           <TouchableOpacity
             style={s.mapaBtn}
-            onPress={() => navigation.navigate('Mapa', { usuario })}
+            onPress={() => navigation.navigate('Mapa')}
           >
             <Feather name="map" size={18} color={C.brand} />
           </TouchableOpacity>
@@ -142,7 +145,7 @@ export default function HomeScreen({ navigation, route }) {
           {!busca && (
             <TouchableOpacity
               style={s.mapaLink}
-              onPress={() => navigation.navigate('Mapa', { usuario })}
+              onPress={() => navigation.navigate('Mapa')}
             >
               <Feather name="map-pin" size={12} color={C.brand} />
               <Text style={s.mapaLinkTxt}>Ver no mapa</Text>
@@ -162,7 +165,10 @@ export default function HomeScreen({ navigation, route }) {
           <RestauranteCard
             key={rest.id}
             restaurante={rest}
-            onPress={() => navigation.navigate('Restaurante', { restaurante: rest, usuario })}
+            onPress={() => {
+              setRestaurante(rest);
+              navigation.navigate('Restaurante', { restaurante: rest });
+            }}
           />
         ))}
 

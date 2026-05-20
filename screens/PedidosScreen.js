@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
+import { useApp } from '../contexts/AppContext';
 import { C, F, SHADOW } from '../constants/theme';
 
 function formatarData(iso) {
@@ -16,13 +17,13 @@ function formatarData(iso) {
   });
 }
 
-export default function PedidosScreen({ navigation, route }) {
-  const usuario = route?.params?.usuario || {};
+export default function PedidosScreen({ navigation }) {
+  const { usuario } = useApp();
   const [pedidos, setPedidos] = useState([]);
 
   useFocusEffect(useCallback(() => {
     getPedidos().then(setPedidos);
-  }, []));
+  }, [usuario?.email]));
 
   return (
     <View style={s.root}>
@@ -91,7 +92,7 @@ export default function PedidosScreen({ navigation, route }) {
             <Text style={s.vazioSub}>Seus pedidos confirmados aparecem aqui</Text>
             <TouchableOpacity
               style={s.vazioBtn}
-              onPress={() => navigation.navigate('Home', { usuario })}
+              onPress={() => navigation.navigate('Home')}
             >
               <Text style={s.vazioBtnTxt}>Explorar restaurantes</Text>
               <Feather name="arrow-right" size={15} color="#fff" />

@@ -1,38 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, StatusBar, Platform,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { formatarPreco } from '../services/dados';
+import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 import Stepper from '../components/Stepper';
 
 export default function RestauranteScreen({ route, navigation }) {
-  const { restaurante, usuario } = route.params;
-  const [carrinho, setCarrinho] = useState([]);
+  const restaurante = route?.params?.restaurante;
+  const { adicionar, remover, totalItens, totalPreco, itens, setRestaurante } = useCarrinho();
 
-  const totalItens = carrinho.reduce((s, i) => s + i.qtd, 0);
-  const totalPreco = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+  useEffect(() => {
+    if (restaurante) setRestaurante(restaurante);
+  }, [restaurante?.id]);
 
-  function adicionar(produto) {
-    setCarrinho(prev => {
-      const existe = prev.find(i => i.id === produto.id);
-      if (existe) return prev.map(i => i.id === produto.id ? { ...i, qtd: i.qtd + 1 } : i);
-      return [...prev, { ...produto, qtd: 1 }];
-    });
-  }
+  const qtd = (id) => itens.find(i => i.id === id)?.qtd ?? 0;
 
-  function remover(produto) {
-    setCarrinho(prev => {
-      const item = prev.find(i => i.id === produto.id);
-      if (!item) return prev;
-      if (item.qtd === 1) return prev.filter(i => i.id !== produto.id);
-      return prev.map(i => i.id === produto.id ? { ...i, qtd: i.qtd - 1 } : i);
-    });
-  }
-
-  const qtd = (id) => carrinho.find(i => i.id === id)?.qtd ?? 0;
+  if (!restaurante) return null;
 
   return (
     <View style={s.root}>
@@ -89,7 +76,7 @@ export default function RestauranteScreen({ route, navigation }) {
                 quantidade={n}
                 cor={restaurante.cor}
                 onAdicionar={() => adicionar(item)}
-                onRemover={() => remover(item)}
+                onRemover={() => remover(item.id)}
               />
             </View>
           );
@@ -100,7 +87,7 @@ export default function RestauranteScreen({ route, navigation }) {
       {totalItens > 0 && (
         <TouchableOpacity
           style={[s.cta, { backgroundColor: restaurante.cor }]}
-          onPress={() => navigation.navigate('Carrinho', { carrinho, restaurante, usuario })}
+          onPress={() => navigation.navigate('Carrinho')}
           activeOpacity={0.88}
         >
           <View style={s.ctaBadge}>
