@@ -57,7 +57,14 @@ export default function RestauranteProdutoCard({
 
   return (
     <View style={s.card}>
-      <TouchableOpacity style={s.cardPressArea} activeOpacity={0.86} onPress={onPress}>
+      <TouchableOpacity
+        style={s.cardPressArea}
+        activeOpacity={0.86}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.nome}, ${formatarPreco(item.preco)}`}
+        hitSlop={4}
+        onPress={onPress}
+      >
         <Reanimated.View style={[s.prodImg, { backgroundColor: cor + '18' }, emojiStyle]}>
           <Text style={s.prodEmoji}>{item.emoji}</Text>
         </Reanimated.View>

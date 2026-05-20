@@ -224,6 +224,8 @@ export default function RestauranteScreen({ route, navigation }) {
         <View style={[s.cta, { backgroundColor: restaurante.cor }]}>
           <TouchableOpacity
             style={s.ctaPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver carrinho, ${totalItens} itens, total ${formatarPreco(totalPreco)}`}
             onPress={() => {
               haptic.select();
               navigation.navigate('Carrinho');

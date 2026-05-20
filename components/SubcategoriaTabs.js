@@ -17,6 +17,10 @@ export default function SubcategoriaTabs({ tabs, atual, onChange, cor }) {
             <TouchableOpacity
               style={[s.subTab, ativa && { backgroundColor: cor + '14', borderColor: cor }]}
               activeOpacity={0.82}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: ativa }}
+              accessibilityLabel={`Categoria ${item.label}`}
+              hitSlop={6}
               onPress={() => onChange(item.key)}
             >
               <Text style={[s.subTabTxt, ativa && { color: cor }]}>{item.label}</Text>

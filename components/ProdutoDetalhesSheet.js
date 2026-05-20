@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Animated as RNAnimated,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { formatarPreco } from '../services/dados';
 import { C, F, SHADOW } from '../constants/theme';
 import PrimaryButton from './PrimaryButton';
@@ -81,6 +82,15 @@ function BottomSheetSimples({ visible, onClose, onDismiss, children }) {
         </RNAnimated.View>
         <RNAnimated.View style={[s.sheet, { transform: [{ translateY }] }]}>
           <View style={s.handle} />
+          <TouchableOpacity
+            style={s.sheetClose}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar detalhes do produto"
+            hitSlop={8}
+            onPress={onClose}
+          >
+            <Feather name="x" size={18} color={C.ink2} />
+          </TouchableOpacity>
           {children}
         </RNAnimated.View>
       </KeyboardAvoidingView>
@@ -176,6 +186,17 @@ const s = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: C.border,
     marginBottom: 18,
+  },
+  sheetClose: {
+    position: 'absolute',
+    top: 12,
+    right: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sheetContent: { gap: 10 },
   sheetEmoji: {
