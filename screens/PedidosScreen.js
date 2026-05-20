@@ -15,19 +15,6 @@ import SkeletonShimmer from '../components/SkeletonShimmer';
 import { C, F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 
-const STATUS_CONFIG = {
-  confirmado: { label: 'Confirmado', cor: C.teal, bg: C.tealLight, icon: 'check-circle' },
-  preparando: { label: 'Em preparo', cor: C.amber, bg: C.amberLight, icon: 'clock' },
-  a_caminho: { label: 'A caminho', cor: '#2563EB', bg: '#EFF6FF', icon: 'truck' },
-  entregue: { label: 'Entregue', cor: C.ink3, bg: C.bg, icon: 'package' },
-};
-
-const PROXIMO_STATUS = {
-  confirmado: 'preparando',
-  preparando: 'a_caminho',
-  a_caminho: 'entregue',
-};
-
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit', month: 'short',
