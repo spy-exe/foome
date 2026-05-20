@@ -154,6 +154,7 @@ export default function PedidosScreen({ navigation }) {
   const { atualizarPedidosCount } = useApp();
   const [pedidos, setPedidos] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [tabAtiva, setTabAtiva] = useState('andamento');
   const [showAvaliacao, setShowAvaliacao] = useState(false);
   const [pedidoParaAvaliar, setPedidoParaAvaliar] = useState(null);
   const pedidosAvaliacaoAgendados = useRef(new Set());
@@ -228,6 +229,10 @@ export default function PedidosScreen({ navigation }) {
     timeoutsAvaliacao.current.forEach(clearTimeout);
   }, []);
 
+  const pedidosAndamento = pedidos.filter(p => p.status !== 'entregue');
+  const pedidosHistorico = pedidos.filter(p => p.status === 'entregue');
+  const pedidosFiltrados = tabAtiva === 'andamento' ? pedidosAndamento : pedidosHistorico;
+
   useEffect(() => {
     navigation.setOptions({
       tabBarBadge: pedidos.length > 0 ? pedidos.length : undefined,
@@ -247,8 +252,35 @@ export default function PedidosScreen({ navigation }) {
         )}
       </View>
 
+      <View style={s.tabRow}>
+        <TouchableOpacity
+          style={[s.tabBtn, tabAtiva === 'andamento' && s.tabBtnAtiva]}
+          onPress={() => { haptic.select(); setTabAtiva('andamento'); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, tabAtiva === 'andamento' && s.tabTxtAtiva]}>Em andamento</Text>
+          {pedidosAndamento.length > 0 && (
+            <View style={s.tabCount}>
+              <Text style={s.tabCountTxt}>{pedidosAndamento.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.tabBtn, tabAtiva === 'historico' && s.tabBtnAtiva]}
+          onPress={() => { haptic.select(); setTabAtiva('historico'); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.tabTxt, tabAtiva === 'historico' && s.tabTxtAtiva]}>Histórico</Text>
+          {pedidosHistorico.length > 0 && (
+            <View style={s.tabCount}>
+              <Text style={s.tabCountTxt}>{pedidosHistorico.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={carregando ? [] : pedidos}
+        data={carregando ? [] : pedidosFiltrados}
         keyExtractor={i => i.id}
         contentContainerStyle={s.lista}
         renderItem={({ item }) => {
@@ -288,9 +320,22 @@ export default function PedidosScreen({ navigation }) {
                 <Text style={s.qtdLabel}>
                   {item.itens.reduce((s, i) => s + i.qtd, 0)} itens
                 </Text>
-                <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
-                  {formatarPreco(item.total)}
-                </Text>
+                <View style={s.cardFooterRight}>
+                  <TouchableOpacity
+                    style={s.acompanharBtn}
+                    onPress={() => {
+                      haptic.select();
+                      navigation.navigate('Rastreamento', { pedido: item });
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="truck" size={13} color={C.brand} />
+                    <Text style={s.acompanharTxt}>Acompanhar</Text>
+                  </TouchableOpacity>
+                  <Text style={[s.cardTotal, { color: item.restauranteCor ?? C.brand }]}>
+                    {formatarPreco(item.total)}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -361,6 +406,25 @@ const s = StyleSheet.create({
   },
   contadorTxt: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
 
+  tabRow: {
+    flexDirection: 'row', gap: 8,
+    paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  tabBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 9,
+    borderRadius: 10, backgroundColor: C.bg,
+  },
+  tabBtnAtiva: { backgroundColor: C.ink },
+  tabTxt: { fontFamily: F.semibold, fontSize: 13, color: C.ink3 },
+  tabTxtAtiva: { color: '#fff' },
+  tabCount: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8, paddingHorizontal: 7, paddingVertical: 1,
+  },
+  tabCountTxt: { fontFamily: F.bold, fontSize: 11, color: '#fff' },
+
   lista: { padding: 16, paddingBottom: 40 },
 
   skeletonCard: {
@@ -427,9 +491,16 @@ const s = StyleSheet.create({
   chipTxt: { fontFamily: F.medium, fontSize: 11, color: C.ink2 },
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   qtdLabel:   { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
   cardTotalWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardTotal:  { fontFamily: F.headingLg, fontSize: 18 },
+  acompanharBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: 8, backgroundColor: C.brandLight,
+  },
+  acompanharTxt: { fontFamily: F.semibold, fontSize: 12, color: C.brand },
 
   vazio: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 32 },
   vazioIlustracao: {

@@ -151,7 +151,7 @@ export default function ConfirmacaoScreen({ navigation, route }) {
           onPress={() => {
             haptic.light();
             if (pedido) {
-              navigation.navigate('DetalhePedido', { pedido });
+              navigation.navigate('Rastreamento', { pedido });
             } else {
               navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
             }

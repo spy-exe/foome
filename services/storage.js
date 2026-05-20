@@ -21,3 +21,11 @@ export async function getPedidos() {
   const json = await AsyncStorage.getItem('@foome_pedidos');
   return json ? JSON.parse(json) : [];
 }
+
+export const atualizarStatusPedido = async (id, novoStatus) => {
+  const pedidos = await getPedidos();
+  const atualizados = pedidos.map(p =>
+    p.id === id ? { ...p, status: novoStatus } : p
+  );
+  await AsyncStorage.setItem('@foome_pedidos', JSON.stringify(atualizados));
+};

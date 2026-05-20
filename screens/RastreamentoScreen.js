@@ -14,7 +14,7 @@ import Animated, {
   Easing,
   SlideInDown,
 } from 'react-native-reanimated';
-import { getPedidos, salvarPedidos } from '../services/storage';
+import { atualizarStatusPedido } from '../services/storage';
 import { getAvaliacaoPedido } from '../services/avaliacao';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, SHADOW } from '../constants/theme';
@@ -153,15 +153,6 @@ export default function RastreamentoScreen({ route, navigation }) {
     }
   }, [status, pedido.id]);
 
-  async function salvarPedidoAtualizado() {
-    try {
-      const pedidos = await getPedidos();
-      await salvarPedidos(pedidos.map(p =>
-        p.id === pedido.id ? { ...p, status } : p,
-      ));
-    } catch {}
-  }
-
   function handleSimularAvancar(novoStatus) {
     const agora = new Date().toLocaleTimeString('pt-BR', {
       hour: '2-digit', minute: '2-digit',
@@ -169,7 +160,7 @@ export default function RastreamentoScreen({ route, navigation }) {
     setStatus(novoStatus);
     setTimestamps(prev => ({ ...prev, [novoStatus]: agora }));
     haptic.medium();
-    if (novoStatus === 'entregue') salvarPedidoAtualizado();
+    atualizarStatusPedido(pedido.id, novoStatus);
   }
 
   useEffect(() => {
