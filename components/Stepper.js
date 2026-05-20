@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { F } from '../constants/theme';
 
 export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
+  const slideY = useSharedValue(0);
+  const prevQtd = useSharedValue(quantidade);
+
+  useEffect(() => {
+    if (quantidade > prevQtd.value) {
+      slideY.value = withSequence(
+        withTiming(-8, { duration: 95 }),
+        withTiming(0, { duration: 115 }),
+      );
+    } else if (quantidade < prevQtd.value && quantidade > 0) {
+      slideY.value = withSequence(
+        withTiming(8, { duration: 95 }),
+        withTiming(0, { duration: 115 }),
+      );
+    }
+    prevQtd.value = quantidade;
+  }, [quantidade]);
+
+  const countStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: slideY.value }],
+  }));
+
   if (quantidade === 0) {
     return (
       <TouchableOpacity
@@ -23,7 +51,9 @@ export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
       >
         <Feather name="minus" size={14} color={cor} />
       </TouchableOpacity>
-      <Text style={[s.count, { color: cor }]}>{quantidade}</Text>
+      <Animated.Text style={[s.count, { color: cor }, countStyle]}>
+        {quantidade}
+      </Animated.Text>
       <TouchableOpacity
         style={[s.stepBtn, { backgroundColor: cor, borderColor: cor }]}
         onPress={onAdicionar}

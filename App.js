@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,14 +20,11 @@ import {
 
 import LoginScreen       from './screens/LoginScreen';
 import CadastroScreen    from './screens/CadastroScreen';
-import HomeScreen        from './screens/HomeScreen';
-import RestauranteScreen from './screens/RestauranteScreen';
-import CarrinhoScreen    from './screens/CarrinhoScreen';
-import PedidosScreen     from './screens/PedidosScreen';
-import MapaScreen        from './screens/MapaScreen';
 import OnboardingScreen  from './screens/OnboardingScreen';
+import TabNavigator      from './navigation/TabNavigator';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CarrinhoProvider } from './contexts/CarrinhoContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { C, F } from './constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -40,14 +37,29 @@ function RootNavigator() {
   if (carregando) return null;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: true }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animationEnabled: true,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: { duration: 350 },
+          },
+          close: {
+            animation: 'timing',
+            config: { duration: 300 },
+          },
+        },
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+      }}
+    >
       {usuario ? (
         <>
-          <Stack.Screen name="Home"        component={HomeScreen} />
-          <Stack.Screen name="Restaurante" component={RestauranteScreen} />
-          <Stack.Screen name="Carrinho"    component={CarrinhoScreen} />
-          <Stack.Screen name="Pedidos"     component={PedidosScreen} />
-          <Stack.Screen name="Mapa"        component={MapaScreen} />
+          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="Cadastro" component={CadastroScreen} />
         </>
       ) : (
         <>
@@ -143,18 +155,20 @@ export default function App() {
   if (onboardingFeito === null) return null;
 
   return (
-    <AppProvider>
-      <CarrinhoProvider>
-        <View style={{ flex: 1 }} onLayout={onReady}>
-          {!onboardingFeito ? (
-            <OnboardingScreen onFinish={() => setOnboardingFeito(true)} />
-          ) : (
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          )}
-        </View>
-      </CarrinhoProvider>
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <CarrinhoProvider>
+          <View style={{ flex: 1 }} onLayout={onReady}>
+            {!onboardingFeito ? (
+              <OnboardingScreen onFinish={() => setOnboardingFeito(true)} />
+            ) : (
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+            )}
+          </View>
+        </CarrinhoProvider>
+      </AppProvider>
+    </ThemeProvider>
   );
 }

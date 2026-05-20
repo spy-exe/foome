@@ -3,6 +3,10 @@
     "name": "Foome",
     "slug": "foome",
     "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
@@ -25,11 +29,21 @@
         "backgroundColor": "#E8452C"
       },
       "package": "com.foome.app",
-      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "plugins": [
-      ["expo-camera", { "cameraPermission": "Foome precisa da câmera para sua foto de perfil." }],
-      "expo-splash-screen"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Foome precisa da câmera para sua foto de perfil."
+        }
+      ],
+      "expo-splash-screen",
+      "expo-font"
     ]
   }
 }
