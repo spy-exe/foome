@@ -1,18 +1,29 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { C, F, SHADOW } from '../constants/theme';
+import { haptic } from '../utils/haptics';
 
-export default function PrimaryButton({ label, onPress, color, disabled, style, leftIcon }) {
+export default function PrimaryButton({ label, onPress, color, disabled, loading, style, leftIcon }) {
   const bg = color ?? C.brand;
+  const handlePress = () => {
+    if (disabled || loading) return;
+    haptic.light();
+    onPress?.();
+  };
+
   return (
     <TouchableOpacity
-      style={[s.btn, { backgroundColor: bg, shadowColor: bg }, disabled && s.off, style]}
-      onPress={onPress}
-      disabled={disabled}
+      style={[s.btn, { backgroundColor: bg, shadowColor: bg }, (disabled || loading) && s.off, style]}
+      onPress={handlePress}
+      disabled={disabled || loading}
       activeOpacity={0.85}
     >
-      {leftIcon && <View style={{ marginRight: 8 }}>{leftIcon}</View>}
-      <Text style={s.txt}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+      ) : leftIcon ? (
+        <View style={{ marginRight: 8 }}>{leftIcon}</View>
+      ) : null}
+      <Text style={s.txt}>{loading ? 'Aguarde...' : label}</Text>
     </TouchableOpacity>
   );
 }
