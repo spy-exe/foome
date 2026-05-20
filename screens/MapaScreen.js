@@ -7,9 +7,11 @@ import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { RESTAURANTES } from '../services/dados';
+import { useApp } from '../contexts/AppContext';
+import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 
-const CARD_H   = 210;
+const CARD_H   = 320;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
 const CATEGORIA_CORES = {
@@ -35,8 +37,9 @@ const CATEGORIAS_MAPA = [
   { key: 'Açaí', label: 'Açaí', icon: 'cafe-outline' },
 ];
 
-export default function MapaScreen({ navigation, route }) {
-  const usuario = route?.params?.usuario || {};
+export default function MapaScreen({ navigation }) {
+  const { usuario } = useApp();
+  const { setRestaurante } = useCarrinho();
   const [userLoc, setUserLoc] = useState(null);
   const [locStatus, setLocStatus] = useState('loading');
   const [filtroCat, setFiltroCat] = useState(null);
@@ -118,6 +121,20 @@ export default function MapaScreen({ navigation, route }) {
     if (catKey && selecionado?.categoria !== catKey) fechar();
   }
 
+  function abrirCardapio() {
+    if (!selecionado) return;
+    setRestaurante(selecionado);
+    const routeNames = navigation.getState?.()?.routeNames || [];
+    if (routeNames.includes('HomeTab')) {
+      navigation.navigate('HomeTab', {
+        screen: 'Restaurante',
+        params: { restaurante: selecionado },
+      });
+      return;
+    }
+    navigation.navigate('Restaurante', { restaurante: selecionado, usuario });
+  }
+
   return (
     <View style={s.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -188,7 +205,7 @@ export default function MapaScreen({ navigation, route }) {
       )}
 
       <TouchableOpacity
-        style={[s.myLocBtn, !userLoc && s.myLocBtnOff]}
+        style={[s.myLocBtn, selecionado && s.myLocBtnRaised, !userLoc && s.myLocBtnOff]}
         onPress={centralizarNoUsuario}
         activeOpacity={0.85}
       >
@@ -196,7 +213,7 @@ export default function MapaScreen({ navigation, route }) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[s.myLocBtn, s.filterBtn]}
+        style={[s.myLocBtn, s.filterBtn, selecionado && s.filterBtnRaised]}
         onPress={() => setShowFiltro(v => !v)}
         activeOpacity={0.85}
       >
@@ -236,6 +253,12 @@ export default function MapaScreen({ navigation, route }) {
         {selecionado && (
           <>
             <View style={s.handle} />
+            <View style={[s.sheetCover, { backgroundColor: `${selecionado.cor}18` }]}>
+              <Text style={s.sheetCoverEmoji}>{selecionado.emoji}</Text>
+              <View style={[s.sheetCoverBadge, { backgroundColor: selecionado.cor }]}>
+                <Text style={s.sheetCoverBadgeTxt}>{selecionado.categoria}</Text>
+              </View>
+            </View>
             <View style={s.sheetRow}>
               <View style={[s.sheetIcon, { backgroundColor: selecionado.cor + '18' }]}>
                 <Text style={{ fontSize: 32 }}>{selecionado.emoji}</Text>
@@ -254,11 +277,17 @@ export default function MapaScreen({ navigation, route }) {
                     {selecionado.entrega}
                   </Text>
                 </View>
+                <View style={s.sheetAddress}>
+                  <Feather name="map-pin" size={11} color={C.ink3} />
+                  <Text style={s.metaTxt}>Vassouras/RJ</Text>
+                  <View style={s.dot} />
+                  <Text style={s.metaTxt}>{selecionado.produtos.length} itens</Text>
+                </View>
               </View>
             </View>
             <TouchableOpacity
               style={[s.sheetBtn, { backgroundColor: selecionado.cor }]}
-              onPress={() => navigation.navigate('Restaurante', { restaurante: selecionado, usuario })}
+              onPress={abrirCardapio}
               activeOpacity={0.85}
             >
               <Text style={s.sheetBtnTxt}>Ver cardápio</Text>
@@ -336,7 +365,9 @@ const s = StyleSheet.create({
     ...SHADOW.float,
   },
   myLocBtnOff: { opacity: 0.72 },
+  myLocBtnRaised: { bottom: CARD_H + 20 },
   filterBtn: { bottom: 232 },
+  filterBtnRaised: { bottom: CARD_H + 72 },
 
   filtroRow: {
     position: 'absolute',
@@ -413,6 +444,24 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 18,
   },
+  sheetCover: {
+    height: 76,
+    borderRadius: 18,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  sheetCoverEmoji: { fontSize: 44 },
+  sheetCoverBadge: {
+    position: 'absolute',
+    right: 12,
+    bottom: 10,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  sheetCoverBadgeTxt: { fontFamily: F.heading, fontSize: 11, color: '#fff' },
   sheetRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
   sheetIcon: { width: 68, height: 68, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   sheetInfo: { flex: 1 },
@@ -422,14 +471,16 @@ const s = StyleSheet.create({
   metaTxt:   { fontFamily: F.medium,    fontSize: 12, color: C.ink2 },
   dot:       { width: 3, height: 3, borderRadius: 2, backgroundColor: C.ink4, marginHorizontal: 6 },
   gratis:    { color: C.teal },
+  sheetAddress: { flexDirection: 'row', alignItems: 'center', marginTop: 7 },
 
   sheetBtn: {
     flexDirection: 'row',
     borderRadius: 18,
-    height: 52,
+    minHeight: 56,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 16,
   },
   sheetBtnTxt: { fontFamily: F.heading, fontSize: 16, color: '#fff' },
 });
