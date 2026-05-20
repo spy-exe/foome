@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, Animated, Platform, ActivityIndicator,
+  StatusBar, Animated, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { useCarrinho } from '../contexts/CarrinhoContext';
 import { C, F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 
-const CARD_H   = 210;
+const CARD_H   = 320;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
 export default function MapaScreen({ navigation }) {
@@ -21,14 +21,53 @@ export default function MapaScreen({ navigation }) {
   const [selecionado, setSelecionado] = useState(null);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
+  const markersFiltrados = filtroCat
+    ? RESTAURANTES.filter(r => r.categoria === filtroCat)
+    : RESTAURANTES;
+  const regiaoInicial = userLoc || VASSOURAS;
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocOk(status === 'granted');
-      setBuscando(false);
-    })();
+    obterLocalizacao();
   }, []);
+
+  async function obterLocalizacao() {
+    setLocStatus('loading');
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setUserLoc(null);
+        setLocStatus('denied');
+        mapRef.current?.animateToRegion(VASSOURAS, 500);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const region = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      };
+
+      setUserLoc(region);
+      setLocStatus('granted');
+      mapRef.current?.animateToRegion(region, 500);
+    } catch (e) {
+      setUserLoc(null);
+      setLocStatus('denied');
+      mapRef.current?.animateToRegion(VASSOURAS, 500);
+    }
+  }
+
+  function centralizarNoUsuario() {
+    if (userLoc) {
+      mapRef.current?.animateToRegion(userLoc, 600);
+      return;
+    }
+    obterLocalizacao();
+  }
 
   function onPin(rest) {
     haptic.select();
@@ -55,6 +94,25 @@ export default function MapaScreen({ navigation }) {
     }).start(() => setSelecionado(null));
   }
 
+  function escolherFiltro(catKey) {
+    setFiltroCat(catKey);
+    if (catKey && selecionado?.categoria !== catKey) fechar();
+  }
+
+  function abrirCardapio() {
+    if (!selecionado) return;
+    setRestaurante(selecionado);
+    const routeNames = navigation.getState?.()?.routeNames || [];
+    if (routeNames.includes('HomeTab')) {
+      navigation.navigate('HomeTab', {
+        screen: 'Restaurante',
+        params: { restaurante: selecionado },
+      });
+      return;
+    }
+    navigation.navigate('Restaurante', { restaurante: selecionado, usuario });
+  }
+
   return (
     <View style={s.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -62,29 +120,37 @@ export default function MapaScreen({ navigation }) {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={VASSOURAS}
-        showsUserLocation={locOk}
+        initialRegion={regiaoInicial}
+        showsUserLocation={locStatus === 'granted'}
         showsMyLocationButton={false}
         onPress={fechar}
       >
-        {RESTAURANTES.map(rest => (
-          <Marker
-            key={rest.id}
-            coordinate={{ latitude: rest.lat, longitude: rest.lng }}
-            onPress={() => onPin(rest)}
-            tracksViewChanges={false}
-          >
-            {/* pinWrapper dá espaço pro shadow não ser cortado pelo Marker */}
-            <View style={s.pinWrapper}>
-              <View style={[
-                s.pin,
-                selecionado?.id === rest.id && { borderColor: rest.cor, borderWidth: 2.5 },
-              ]}>
-                <Text style={{ fontSize: 20 }}>{rest.emoji}</Text>
+        {markersFiltrados.map(rest => {
+          const cor = CATEGORIA_CORES[rest.categoria] || C.brand;
+          const ativo = selecionado?.id === rest.id;
+          return (
+            <Marker
+              key={rest.id}
+              coordinate={{ latitude: rest.lat, longitude: rest.lng }}
+              onPress={() => onPin(rest)}
+              tracksViewChanges={false}
+            >
+              <View style={s.pinWrapper}>
+                <View style={[
+                  s.pin,
+                  { borderColor: cor },
+                  ativo && {
+                    borderWidth: 3,
+                    backgroundColor: `${cor}18`,
+                  },
+                ]}>
+                  <Text style={s.pinEmoji}>{rest.emoji}</Text>
+                </View>
+                <View style={[s.pinPoint, { borderTopColor: cor }]} />
               </View>
-            </View>
-          </Marker>
-        ))}
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* ── Header flutuante ── */}
@@ -102,11 +168,66 @@ export default function MapaScreen({ navigation }) {
           <Text style={s.headerTitle}>Perto de você</Text>
           <View style={s.headerSubRow}>
             <Feather name="map-pin" size={11} color={C.ink3} />
-            <Text style={s.headerSub}>Vassouras, RJ · {RESTAURANTES.length} locais</Text>
+            <Text style={s.headerSub}>
+              Vassouras, RJ · {markersFiltrados.length} locais
+            </Text>
           </View>
         </View>
-        {buscando && <ActivityIndicator size="small" color={C.brand} />}
+        {locStatus === 'loading' && <ActivityIndicator size="small" color={C.brand} />}
       </View>
+
+      {locStatus === 'denied' && (
+        <View style={s.permBanner}>
+          <Feather name="map-pin" size={14} color={C.amber} />
+          <Text style={s.permTxt}>
+            Localização desativada. Mostrando restaurantes em Vassouras/RJ.
+          </Text>
+          <TouchableOpacity onPress={obterLocalizacao} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={s.permBtn}>Ativar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[s.myLocBtn, selecionado && s.myLocBtnRaised, !userLoc && s.myLocBtnOff]}
+        onPress={centralizarNoUsuario}
+        activeOpacity={0.85}
+      >
+        <Feather name="crosshair" size={18} color={C.brand} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[s.myLocBtn, s.filterBtn, selecionado && s.filterBtnRaised]}
+        onPress={() => setShowFiltro(v => !v)}
+        activeOpacity={0.85}
+      >
+        <Feather name="sliders" size={18} color={showFiltro ? C.brand : C.ink2} />
+      </TouchableOpacity>
+
+      {showFiltro && (
+        <View style={[s.filtroRow, locStatus === 'denied' && s.filtroRowWithBanner]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.filtroContent}
+          >
+            {CATEGORIAS_MAPA.map(cat => {
+              const ativo = filtroCat === cat.key;
+              return (
+                <TouchableOpacity
+                  key={cat.key || 'todos'}
+                  style={[s.filtroChip, ativo && s.filtroChipOn]}
+                  onPress={() => escolherFiltro(cat.key)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name={cat.icon} size={14} color={ativo ? '#fff' : C.ink2} />
+                  <Text style={[s.filtroTxt, ativo && s.filtroTxtOn]}>{cat.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Bottom sheet animado ── */}
       <Animated.View
@@ -116,6 +237,12 @@ export default function MapaScreen({ navigation }) {
         {selecionado && (
           <>
             <View style={s.handle} />
+            <View style={[s.sheetCover, { backgroundColor: `${selecionado.cor}18` }]}>
+              <Text style={s.sheetCoverEmoji}>{selecionado.emoji}</Text>
+              <View style={[s.sheetCoverBadge, { backgroundColor: selecionado.cor }]}>
+                <Text style={s.sheetCoverBadgeTxt}>{selecionado.categoria}</Text>
+              </View>
+            </View>
             <View style={s.sheetRow}>
               <View style={[s.sheetIcon, { backgroundColor: selecionado.cor + '18' }]}>
                 <Text style={{ fontSize: 32 }}>{selecionado.emoji}</Text>
@@ -133,6 +260,12 @@ export default function MapaScreen({ navigation }) {
                   <Text style={[s.metaTxt, selecionado.entrega === 'Grátis' && s.gratis]}>
                     {selecionado.entrega}
                   </Text>
+                </View>
+                <View style={s.sheetAddress}>
+                  <Feather name="map-pin" size={11} color={C.ink3} />
+                  <Text style={s.metaTxt}>Vassouras/RJ</Text>
+                  <View style={s.dot} />
+                  <Text style={s.metaTxt}>{selecionado.produtos.length} itens</Text>
                 </View>
               </View>
             </View>
@@ -188,8 +321,76 @@ const s = StyleSheet.create({
   headerSubRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   headerSub:    { fontFamily: F.regular,  fontSize: 12, color: C.ink3 },
 
+  permBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 108,
+    left: 16,
+    right: 16,
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: '#FFD9A8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    ...SHADOW.float,
+  },
+  permTxt: { flex: 1, fontFamily: F.medium, fontSize: 12, color: C.ink2, lineHeight: 16 },
+  permBtn: { fontFamily: F.heading, fontSize: 12, color: C.brand },
+
+  myLocBtn: {
+    position: 'absolute',
+    bottom: 180,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: C.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: C.border,
+    ...SHADOW.float,
+  },
+  myLocBtnOff: { opacity: 0.72 },
+  myLocBtnRaised: { bottom: CARD_H + 20 },
+  filterBtn: { bottom: 232 },
+  filterBtnRaised: { bottom: CARD_H + 72 },
+
+  filtroRow: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 108,
+    left: 0,
+    right: 0,
+    paddingLeft: 16,
+    paddingRight: 76,
+  },
+  filtroRowWithBanner: {
+    top: Platform.OS === 'ios' ? 172 : 162,
+  },
+  filtroContent: { gap: 6, paddingRight: 16 },
+  filtroChip: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    ...SHADOW.card,
+  },
+  filtroChipOn: { backgroundColor: C.brand, borderColor: C.brand },
+  filtroTxt: { fontFamily: F.medium, fontSize: 12, color: C.ink2 },
+  filtroTxtOn: { color: '#fff' },
+
   pinWrapper: {
     padding: 6, // espaço para o shadow não ser clipado pelo Marker
+    alignItems: 'center',
   },
   pin: {
     width: 50, height: 50,
@@ -204,6 +405,17 @@ const s = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+  },
+  pinEmoji: { fontSize: 20 },
+  pinPoint: {
+    width: 0,
+    height: 0,
+    marginTop: -1,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 
   sheet: {
@@ -223,6 +435,24 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 18,
   },
+  sheetCover: {
+    height: 76,
+    borderRadius: 18,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  sheetCoverEmoji: { fontSize: 44 },
+  sheetCoverBadge: {
+    position: 'absolute',
+    right: 12,
+    bottom: 10,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  sheetCoverBadgeTxt: { fontFamily: F.heading, fontSize: 11, color: '#fff' },
   sheetRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
   sheetIcon: { width: 68, height: 68, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   sheetInfo: { flex: 1 },
@@ -232,14 +462,16 @@ const s = StyleSheet.create({
   metaTxt:   { fontFamily: F.medium,    fontSize: 12, color: C.ink2 },
   dot:       { width: 3, height: 3, borderRadius: 2, backgroundColor: C.ink4, marginHorizontal: 6 },
   gratis:    { color: C.teal },
+  sheetAddress: { flexDirection: 'row', alignItems: 'center', marginTop: 7 },
 
   sheetBtn: {
     flexDirection: 'row',
     borderRadius: 18,
-    height: 52,
+    minHeight: 56,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 16,
   },
   sheetBtnTxt: { fontFamily: F.heading, fontSize: 16, color: '#fff' },
 });
