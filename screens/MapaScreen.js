@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, Animated, Platform, ActivityIndicator,
+  StatusBar, Animated, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -12,13 +12,41 @@ import { C, F, SHADOW } from '../constants/theme';
 const CARD_H   = 210;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
+const CATEGORIA_CORES = {
+  'Hambúrgueres': '#E8452C',
+  Pizzas: '#D97706',
+  'Japonês': '#0891B2',
+  Mexicano: '#16A34A',
+  'Saudável': '#059669',
+  Massas: '#7C3AED',
+  Churrasco: '#B45309',
+  'Açaí': '#9333EA',
+};
+
+const CATEGORIAS_MAPA = [
+  { key: null, label: 'Todos', icon: 'apps-outline' },
+  { key: 'Hambúrgueres', label: 'Burgers', icon: 'fast-food-outline' },
+  { key: 'Pizzas', label: 'Pizza', icon: 'pizza-outline' },
+  { key: 'Japonês', label: 'Sushi', icon: 'fish-outline' },
+  { key: 'Mexicano', label: 'Mexicano', icon: 'flame-outline' },
+  { key: 'Saudável', label: 'Saudável', icon: 'leaf-outline' },
+  { key: 'Massas', label: 'Massas', icon: 'restaurant-outline' },
+  { key: 'Churrasco', label: 'Churrasco', icon: 'bonfire-outline' },
+  { key: 'Açaí', label: 'Açaí', icon: 'cafe-outline' },
+];
+
 export default function MapaScreen({ navigation, route }) {
   const usuario = route?.params?.usuario || {};
   const [userLoc, setUserLoc] = useState(null);
   const [locStatus, setLocStatus] = useState('loading');
+  const [filtroCat, setFiltroCat] = useState(null);
+  const [showFiltro, setShowFiltro] = useState(false);
   const [selecionado, setSelecionado] = useState(null);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
+  const markersFiltrados = filtroCat
+    ? RESTAURANTES.filter(r => r.categoria === filtroCat)
+    : RESTAURANTES;
   const regiaoInicial = userLoc || VASSOURAS;
 
   useEffect(() => {
@@ -85,6 +113,11 @@ export default function MapaScreen({ navigation, route }) {
     }).start(() => setSelecionado(null));
   }
 
+  function escolherFiltro(catKey) {
+    setFiltroCat(catKey);
+    if (catKey && selecionado?.categoria !== catKey) fechar();
+  }
+
   return (
     <View style={s.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -97,24 +130,32 @@ export default function MapaScreen({ navigation, route }) {
         showsMyLocationButton={false}
         onPress={fechar}
       >
-        {RESTAURANTES.map(rest => (
-          <Marker
-            key={rest.id}
-            coordinate={{ latitude: rest.lat, longitude: rest.lng }}
-            onPress={() => onPin(rest)}
-            tracksViewChanges={false}
-          >
-            {/* pinWrapper dá espaço pro shadow não ser cortado pelo Marker */}
-            <View style={s.pinWrapper}>
-              <View style={[
-                s.pin,
-                selecionado?.id === rest.id && { borderColor: rest.cor, borderWidth: 2.5 },
-              ]}>
-                <Text style={{ fontSize: 20 }}>{rest.emoji}</Text>
+        {markersFiltrados.map(rest => {
+          const cor = CATEGORIA_CORES[rest.categoria] || C.brand;
+          const ativo = selecionado?.id === rest.id;
+          return (
+            <Marker
+              key={rest.id}
+              coordinate={{ latitude: rest.lat, longitude: rest.lng }}
+              onPress={() => onPin(rest)}
+              tracksViewChanges={false}
+            >
+              <View style={s.pinWrapper}>
+                <View style={[
+                  s.pin,
+                  { borderColor: cor },
+                  ativo && {
+                    borderWidth: 3,
+                    backgroundColor: `${cor}18`,
+                  },
+                ]}>
+                  <Text style={s.pinEmoji}>{rest.emoji}</Text>
+                </View>
+                <View style={[s.pinPoint, { borderTopColor: cor }]} />
               </View>
-            </View>
-          </Marker>
-        ))}
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* ── Header flutuante ── */}
@@ -126,7 +167,9 @@ export default function MapaScreen({ navigation, route }) {
           <Text style={s.headerTitle}>Perto de você</Text>
           <View style={s.headerSubRow}>
             <Feather name="map-pin" size={11} color={C.ink3} />
-            <Text style={s.headerSub}>Vassouras, RJ · {RESTAURANTES.length} locais</Text>
+            <Text style={s.headerSub}>
+              Vassouras, RJ · {markersFiltrados.length} locais
+            </Text>
           </View>
         </View>
         {locStatus === 'loading' && <ActivityIndicator size="small" color={C.brand} />}
@@ -151,6 +194,39 @@ export default function MapaScreen({ navigation, route }) {
       >
         <Feather name="crosshair" size={18} color={C.brand} />
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[s.myLocBtn, s.filterBtn]}
+        onPress={() => setShowFiltro(v => !v)}
+        activeOpacity={0.85}
+      >
+        <Feather name="sliders" size={18} color={showFiltro ? C.brand : C.ink2} />
+      </TouchableOpacity>
+
+      {showFiltro && (
+        <View style={[s.filtroRow, locStatus === 'denied' && s.filtroRowWithBanner]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.filtroContent}
+          >
+            {CATEGORIAS_MAPA.map(cat => {
+              const ativo = filtroCat === cat.key;
+              return (
+                <TouchableOpacity
+                  key={cat.key || 'todos'}
+                  style={[s.filtroChip, ativo && s.filtroChipOn]}
+                  onPress={() => escolherFiltro(cat.key)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name={cat.icon} size={14} color={ativo ? '#fff' : C.ink2} />
+                  <Text style={[s.filtroTxt, ativo && s.filtroTxtOn]}>{cat.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Bottom sheet animado ── */}
       <Animated.View
@@ -260,9 +336,39 @@ const s = StyleSheet.create({
     ...SHADOW.float,
   },
   myLocBtnOff: { opacity: 0.72 },
+  filterBtn: { bottom: 232 },
+
+  filtroRow: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 108,
+    left: 0,
+    right: 0,
+    paddingLeft: 16,
+    paddingRight: 76,
+  },
+  filtroRowWithBanner: {
+    top: Platform.OS === 'ios' ? 172 : 162,
+  },
+  filtroContent: { gap: 6, paddingRight: 16 },
+  filtroChip: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    ...SHADOW.card,
+  },
+  filtroChipOn: { backgroundColor: C.brand, borderColor: C.brand },
+  filtroTxt: { fontFamily: F.medium, fontSize: 12, color: C.ink2 },
+  filtroTxtOn: { color: '#fff' },
 
   pinWrapper: {
     padding: 6, // espaço para o shadow não ser clipado pelo Marker
+    alignItems: 'center',
   },
   pin: {
     width: 50, height: 50,
@@ -277,6 +383,17 @@ const s = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+  },
+  pinEmoji: { fontSize: 20 },
+  pinPoint: {
+    width: 0,
+    height: 0,
+    marginTop: -1,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 
   sheet: {
