@@ -19,6 +19,7 @@ export default function MapaScreen({ navigation }) {
   const [locOk,    setLocOk]    = useState(false);
   const [buscando, setBuscando] = useState(true);
   const [selecionado, setSelecionado] = useState(null);
+  const [filtroCat, setFiltroCat] = useState(null);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
   const markersFiltrados = filtroCat
