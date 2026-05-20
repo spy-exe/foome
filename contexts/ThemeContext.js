@@ -12,23 +12,44 @@ import { C as lightColors } from '../constants/theme';
 
 const darkColors = {
   brand: '#E8452C',
-  brandDark: '#C23525',
+  brandDark: '#C73520',
   brandLight: '#2A1513',
-  brandBorder: '#4A2020',
 
-  ink: '#F0F0F7',
-  ink2: '#C8C8DC',
-  ink3: '#9494B2',
-  ink4: '#6A6A82',
+  ink: '#F0F0F0',
+  inkMid: '#B0B0B0',
+  inkLight: '#707070',
 
-  bg: '#12121A',
-  surface: '#1E1E2A',
-  border: '#2A2A3A',
+  midnight: '#0F0F1A',
+  midnightMid: '#1A1A30',
+  midnightLight: '#4A4A5E',
 
-  amber: '#FF9B3D',
-  amberLight: '#2A2018',
-  teal: '#00BE99',
-  tealLight: '#182A24',
+  white: '#121212',
+  offWhite: '#1A1A1A',
+  surface: '#1E1E1E',
+  surfaceAlt: '#2A2A2A',
+  border: '#333333',
+  borderDark: '#444444',
+
+  success: '#22C55E',
+  successLight: '#1A2E1A',
+  warning: '#F59E0B',
+  warningLight: '#2E2A1A',
+  error: '#EF4444',
+  errorLight: '#2E1A1A',
+  info: '#3B82F6',
+  infoLight: '#1A1A2E',
+
+  // Backward-compatible aliases
+  brandBorder: '#2A1513',
+  ink2: '#B0B0B0',
+  ink3: '#707070',
+  ink4: '#4A4A5E',
+  bg: '#1A1A1A',
+  amber: '#F59E0B',
+  amberLight: '#2E2A1A',
+  teal: '#22C55E',
+  tealLight: '#1A2E1A',
+  midnightSurface: '#1A1A30',
 };
 
 const ThemeContext = createContext(null);

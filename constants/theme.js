@@ -6,31 +6,66 @@ export const F = {
   headingSm: 'Poppins-SemiBold',
   heading:   'Poppins-Bold',
   headingLg: 'Poppins-ExtraBold',
+  mono:      'JetBrainsMono-Regular',
+  monoMedium:'JetBrainsMono-Medium',
+  monoBold:  'JetBrainsMono-Bold',
+
+  // Novos aliases
+  ui:           'Inter-Regular',
+  uiMedium:     'Inter-Medium',
+  uiSemi:       'Inter-SemiBold',
+  uiBold:       'Inter-Bold',
+  body:         'Inter-Regular',
+  bodyMedium:   'Inter-Medium',
+  bodySemi:     'Inter-SemiBold',
+  bodyBold:     'Inter-Bold',
 };
 
 export const C = {
   // Brand
   brand:        '#E8452C',
-  brandDark:    '#C23525',
-  brandLight:   '#FFF0EE',
-  brandBorder:  '#FBD0CB',
+  brandDark:    '#C73520',
+  brandLight:   '#FFF0ED',
 
-  // Ink (text / icons)
-  ink:          '#17172B',   // deep indigo-black
-  ink2:         '#4A4A6A',   // secondary text
-  ink3:         '#9494B2',   // placeholder / caption
-  ink4:         '#C8C8DC',   // disabled / very light
+  // Base neutra
+  ink:          '#0A0A0A',
+  inkMid:       '#3D3D3D',
+  inkLight:     '#8A8A8A',
+
+  // Midnight (dark accents / headers)
+  midnight:     '#1A1A2E',
+  midnightMid:  '#2D2D4E',
+  midnightLight:'#E8E8F0',
 
   // Surfaces
-  bg:           '#F5F5FA',   // warm off-white with purple hint
+  white:        '#FFFFFF',
+  offWhite:     '#F5F5F0',
   surface:      '#FFFFFF',
-  border:       '#E8E8F0',
+  surfaceAlt:   '#F0F0EB',
+  border:       '#E8E8E4',
+  borderDark:   '#D0D0CC',
 
-  // Accents
-  amber:        '#FF9B3D',   // stars, "Grátis" badge
-  amberLight:   '#FFF4E8',
-  teal:         '#00BE99',   // success / confirmed
-  tealLight:    '#E6FAF6',
+  // Semânticas
+  success:      '#16A34A',
+  successLight: '#DCFCE7',
+  warning:      '#D97706',
+  warningLight: '#FEF3C7',
+  error:        '#DC2626',
+  errorLight:   '#FEE2E2',
+  info:         '#2563EB',
+  infoLight:    '#EFF6FF',
+
+  // ── Backward-compatible aliases ──
+  brandBorder:  '#FFF0ED',
+  ink2:         '#3D3D3D',
+  ink3:         '#8A8A8A',
+  ink4:         '#E8E8F0',
+  bg:           '#F5F5F0',
+  amber:        '#D97706',
+  amberLight:   '#FEF3C7',
+  teal:         '#16A34A',
+  tealLight:    '#DCFCE7',
+  midnightSurface: '#2D2D4E',
 };
 
 export const SHADOW = {
@@ -58,23 +93,37 @@ export const SHADOW = {
 };
 
 // Spacing system (multiples of 4)
-export const SPACING = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
+export const S = {
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48,
+};
+
+// Backward-compatible alias
+export const SPACING = S;
+
+// Typography presets (spread via ...TYPE.key)
+export const TYPE = {
+  hero:    { fontSize: 32, lineHeight: 40, fontFamily: F.bold },
+  h1:      { fontSize: 26, lineHeight: 34, fontFamily: F.bold },
+  h2:      { fontSize: 22, lineHeight: 30, fontFamily: F.semibold, letterSpacing: -0.5 },
+  h3:      { fontSize: 18, lineHeight: 26, fontFamily: F.semibold },
+  h4:      { fontSize: 16, lineHeight: 24, fontFamily: F.medium },
+  body:    { fontSize: 15, lineHeight: 23, fontFamily: F.regular },
+  bodyS:   { fontSize: 14, lineHeight: 21, fontFamily: F.regular },
+  caption: { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+  badge:   { fontSize: 10, lineHeight: 14, fontFamily: F.monoBold, letterSpacing: 0.5 },
+  rating:  { fontSize: 12, lineHeight: 16, fontFamily: F.monoBold },
+  price:   { fontSize: 18, lineHeight: 24, fontFamily: F.monoBold },
+  priceS:  { fontSize: 14, lineHeight: 20, fontFamily: F.monoBold },
+  time:    { fontSize: 12, lineHeight: 16, fontFamily: F.mono },
 };
 
 // Border radius system
-export const RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  full: 9999,
+export const R = {
+  sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, full: 9999,
 };
+
+// Backward-compatible alias
+export const RADIUS = R;
 
 // Animation presets
 export const ANIM = {

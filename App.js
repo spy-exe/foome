@@ -5,7 +5,14 @@ import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { Utensils } from 'lucide-react-native';
 
+import {
+  NotoSans_400Regular,
+  NotoSans_500Medium,
+  NotoSans_600SemiBold,
+  NotoSans_700Bold,
+} from '@expo-google-fonts/noto-sans';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -13,10 +20,10 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import {
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-  Poppins_800ExtraBold,
-} from '@expo-google-fonts/poppins';
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_700Bold,
+} from '@expo-google-fonts/jetbrains-mono';
 
 import LoginScreen       from './screens/LoginScreen';
 import CadastroScreen    from './screens/CadastroScreen';
@@ -109,14 +116,14 @@ function SplashAnimada({ onFinish, onLayout }) {
           alignItems: 'center',
           marginBottom: 16,
           borderWidth: 2,
-          borderColor: C.brandBorder,
+          borderColor: C.brandLight,
         }}>
-          <Text style={{ fontSize: 44 }}>🍔</Text>
+          <Utensils size={44} color={C.brand} />
         </View>
-        <Text style={{ fontFamily: F.headingLg, fontSize: 40, color: C.brand }}>
+        <Text style={{ fontFamily: F.uiBold, fontSize: 40, color: C.brand }}>
           Foome
         </Text>
-        <Text style={{ fontFamily: F.regular, fontSize: 14, color: C.ink3, marginTop: 6 }}>
+        <Text style={{ fontFamily: F.body, fontSize: 14, color: C.inkLight, marginTop: 6 }}>
           Comida boa, na hora certa.
         </Text>
       </Animated.View>
@@ -126,13 +133,12 @@ function SplashAnimada({ onFinish, onLayout }) {
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
-    'Inter-Regular':      Inter_400Regular,
-    'Inter-Medium':       Inter_500Medium,
-    'Inter-SemiBold':     Inter_600SemiBold,
-    'Inter-Bold':         Inter_700Bold,
-    'Poppins-SemiBold':   Poppins_600SemiBold,
-    'Poppins-Bold':       Poppins_700Bold,
-    'Poppins-ExtraBold':  Poppins_800ExtraBold,
+    NotoSans_400Regular, NotoSans_500Medium,
+    NotoSans_600SemiBold, NotoSans_700Bold,
+    Inter_400Regular, Inter_500Medium,
+    Inter_600SemiBold, Inter_700Bold,
+    JetBrainsMono_400Regular, JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
   });
   const [mostrarSplash, setMostrarSplash] = useState(true);
   const [onboardingFeito, setOnboardingFeito] = useState(null);
