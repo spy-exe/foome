@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, StatusBar, Platform, TextInput,
 } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
@@ -21,8 +21,10 @@ import { salvarPedidos, getPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const ENDERECOS_MOCK = [
   { id: '1', label: 'Casa', endereco: 'Rua das Acácias, 42 - Vassouras, RJ', icon: 'home' },
@@ -30,11 +32,11 @@ const ENDERECOS_MOCK = [
   { id: '3', label: 'Faculdade', endereco: 'Campus Universitário - Vassouras, RJ', icon: 'book-open' },
 ];
 
-const PAGAMENTOS = [
+const makePagamentos = (C) => ([
   { id: 'pix', label: 'PIX', icon: 'smartphone', cor: C.teal },
   { id: 'credito', label: 'Crédito', icon: 'credit-card', cor: C.amber },
   { id: 'debito', label: 'Débito', icon: 'credit-card', cor: C.brand },
-];
+]);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -57,6 +59,8 @@ function hapticImpact() {
 }
 
 function BioPulse() {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const pulse = useSharedValue(1);
 
   useEffect(() => {
@@ -82,6 +86,7 @@ function BioPulse() {
 }
 
 function SwipeableItem({ item, cor, onDelete }) {
+  const s = useThemedStyles(makeStyles);
   const swipeRef = useRef(null);
 
   function renderRightActions() {
@@ -127,6 +132,9 @@ function SwipeableItem({ item, cor, onDelete }) {
 }
 
 export default function CarrinhoScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const PAGAMENTOS = makePagamentos(C);
   const { usuario, atualizarPedidosCount } = useApp();
   const { itens, restaurante, totalPreco, limpar, remover } = useCarrinho();
   const [restauranteSnapshot, setRestauranteSnapshot] = useState(restaurante);
@@ -520,7 +528,7 @@ export default function CarrinhoScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   gestureRoot: { flex: 1 },
   root: { flex: 1, backgroundColor: C.bg },
 

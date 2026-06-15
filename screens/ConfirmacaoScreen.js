@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   StatusBar, Platform, Dimensions,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import Animated, {
   FadeInDown,
   useSharedValue,
@@ -14,8 +14,10 @@ import Animated, {
   withRepeat,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F } from '../constants/theme';
+import { F } from '../constants/theme';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -60,6 +62,8 @@ function ConfettiPiece({ delay, color, side }) {
 
 /* ───────── Tela Principal ───────── */
 export default function ConfirmacaoScreen({ navigation, route }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const pedido = route?.params?.pedido;
   const [mostrarConfetti, setMostrarConfetti] = useState(false);
@@ -180,7 +184,7 @@ export default function ConfirmacaoScreen({ navigation, route }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bg,

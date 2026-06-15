@@ -4,7 +4,7 @@ import {
   StatusBar, Platform, TouchableOpacity,
   Modal, TextInput, Alert,
 } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedidos, salvarPedidos } from '../services/storage';
 import { formatarPreco } from '../services/dados';
@@ -12,8 +12,10 @@ import { getAvaliacaoPedido, salvarAvaliacao } from '../services/avaliacao';
 import { useApp } from '../contexts/AppContext';
 import PrimaryButton from '../components/PrimaryButton';
 import SkeletonShimmer from '../components/SkeletonShimmer';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -22,12 +24,12 @@ function formatarData(iso) {
   });
 }
 
-const STATUS_CONFIG = {
+const makeStatusConfig = (C) => ({
   confirmado:  { label: 'Confirmado', cor: C.teal, bg: C.tealLight, icon: 'check-circle' },
   preparando:  { label: 'Em preparo', cor: C.amber, bg: C.amberLight, icon: 'clock' },
   a_caminho:   { label: 'A caminho', cor: '#2563EB', bg: '#EFF6FF', icon: 'truck' },
   entregue:    { label: 'Entregue', cor: C.ink3, bg: C.bg, icon: 'package' },
-};
+});
 
 const PROXIMO_STATUS = {
   confirmado: 'preparando',
@@ -38,6 +40,7 @@ const PROXIMO_STATUS = {
 const NOTA_LABELS = ['', 'Ruim 😞', 'Regular 😐', 'Bom 😊', 'Muito bom 🤩', 'Excelente 🔥'];
 
 function PedidosSkeletonList() {
+  const s = useThemedStyles(makeStyles);
   return (
     <View>
       {[0, 1, 2].map(i => (
@@ -62,6 +65,8 @@ function PedidosSkeletonList() {
 }
 
 function ModalAvaliacao({ visivel, pedido, onClose }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState('');
 
@@ -151,6 +156,9 @@ function ModalAvaliacao({ visivel, pedido, onClose }) {
 }
 
 export default function PedidosScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const STATUS_CONFIG = makeStatusConfig(C);
   const { atualizarPedidosCount } = useApp();
   const [pedidos, setPedidos] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -384,7 +392,7 @@ export default function PedidosScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

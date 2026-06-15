@@ -11,17 +11,19 @@ import Reanimated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { RESTAURANTES, formatarPreco } from '../services/dados';
 import { getPedidos } from '../services/storage';
 import { getItensFavoritos, getUltimoPedido } from '../services/recomendacao';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
 import SkeletonShimmer from '../components/SkeletonShimmer';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width - 32;
@@ -37,7 +39,7 @@ const CATEGORIAS = [
   { key: 'Açaí',         label: 'Açaí',      icon: 'cafe-outline'       },
 ];
 
-const BANNERS = [
+const makeBanners = (C) => ([
   {
     id: '1',
     titulo: 'Frete grátis',
@@ -62,9 +64,10 @@ const BANNERS = [
     icone: 'dollar-sign',
     tag: 'CUPOM',
   },
-];
+]);
 
 function FoomeRefreshControl({ refreshing }) {
+  const s = useThemedStyles(makeStyles);
   const rotate = useSharedValue(0);
 
   useEffect(() => {
@@ -91,6 +94,7 @@ function FoomeRefreshControl({ refreshing }) {
 }
 
 function HomeSkeletonList() {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.skeletonWrap}>
       {[0, 1, 2].map(i => (
@@ -111,6 +115,7 @@ function HomeSkeletonList() {
 }
 
 function HomeSkeleton() {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.skeletonScreen}>
       <SkeletonShimmer style={s.skeletonBanner} />
@@ -125,6 +130,7 @@ function HomeSkeleton() {
 }
 
 function HighlightText({ texto, termo }) {
+  const s = useThemedStyles(makeStyles);
   if (!termo) return <Text>{texto}</Text>;
 
   const idx = texto.toLowerCase().indexOf(termo.toLowerCase());
@@ -140,6 +146,8 @@ function HighlightText({ texto, termo }) {
 }
 
 function CategoriaChip({ cat, ativa, onPress }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
 
   function pressIn() {
@@ -193,6 +201,9 @@ function restaurantesMaisPedidos(pedidos) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const BANNERS = makeBanners(C);
   const { usuario } = useApp();
   const { adicionar, limpar, setRestaurante } = useCarrinho();
   const [busca, setBusca]     = useState('');
@@ -630,7 +641,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

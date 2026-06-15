@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { C, F, R, S } from '../constants/theme';
+import { F, R, S } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function InputField({ icon, rightElement, erro, label, style, ...props }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [focado, setFocado] = useState(false);
 
   return (
@@ -29,7 +33,7 @@ export default function InputField({ icon, rightElement, erro, label, style, ...
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   container: { width: '100%' },
   label: {
     fontFamily: F.uiMedium,

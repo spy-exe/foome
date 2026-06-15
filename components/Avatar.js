@@ -1,12 +1,16 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { User } from 'lucide-react-native';
-import { C, F, R } from '../constants/theme';
+import { F, R } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const SIZES = { sm: 32, md: 44, lg: 64, xl: 80 };
 
 export default function Avatar({ uri, nome = '', tamanho = 'md' }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const size = SIZES[tamanho] ?? SIZES.md;
   const fontSize = size >= SIZES.lg ? 24 : size >= SIZES.md ? 18 : 12;
   const iniciais = nome
@@ -44,7 +48,7 @@ export default function Avatar({ uri, nome = '', tamanho = 'md' }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   img: { overflow: 'hidden' },
   fallback: {
     backgroundColor: C.midnight,

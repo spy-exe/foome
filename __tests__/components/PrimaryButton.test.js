@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent } from '../../test-utils';
 import PrimaryButton from '../../components/PrimaryButton';
 
 describe('PrimaryButton', () => {

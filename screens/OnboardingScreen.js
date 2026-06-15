@@ -11,11 +11,13 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const { width, height } = Dimensions.get('window');
 
-const slides = [
+const makeSlides = (C) => ([
   {
     id: '1',
     emoji: '🍔',
@@ -40,9 +42,12 @@ const slides = [
     cor: C.teal,
     fundo: C.tealLight,
   },
-];
+]);
 
 export default function OnboardingScreen({ onFinish }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const slides = makeSlides(C);
   const [slideAtivo, setSlideAtivo] = useState(0);
   const flatRef = useRef(null);
   const emojiOpacity = useRef(new Animated.Value(0)).current;
@@ -194,7 +199,7 @@ export default function OnboardingScreen({ onFinish }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.surface,

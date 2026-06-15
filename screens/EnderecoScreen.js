@@ -5,9 +5,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MapPin, Plus, ChevronRight, Trash2, X } from 'lucide-react-native';
 import { getEnderecos, adicionarEndereco, removerEndereco, definirEnderecoPadrao } from '../services/storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function EnderecoScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [enderecos, setEnderecos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -144,7 +148,7 @@ export default function EnderecoScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingBottom: S.md, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { fontFamily: F.uiBold, fontSize: 18, color: C.ink },

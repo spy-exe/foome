@@ -3,20 +3,24 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   StatusBar, Platform, Animated,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { formatarPreco } from '../services/dados';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
-const ETAPAS = [
+const makeEtapas = (C) => ([
   { key: 'confirmado', label: 'Confirmado', icon: 'check-circle', cor: C.teal },
   { key: 'preparando', label: 'Em preparo', icon: 'clock', cor: C.amber },
   { key: 'a_caminho', label: 'A caminho', icon: 'truck', cor: '#2563EB' },
   { key: 'entregue', label: 'Entregue', icon: 'package', cor: C.ink3 },
-];
+]);
+
+const ETAPA_KEYS = ['confirmado', 'preparando', 'a_caminho', 'entregue'];
 
 function indiceStatus(status) {
-  const idx = ETAPAS.findIndex(etapa => etapa.key === status);
+  const idx = ETAPA_KEYS.indexOf(status);
   return idx === -1 ? 0 : idx;
 }
 
@@ -31,6 +35,9 @@ function formatarDataCompleta(iso) {
 }
 
 export default function DetalhePedidoScreen({ route, navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const ETAPAS = makeEtapas(C);
   const insets = useSafeAreaInsets();
   const pedido = route.params.pedido;
   const [status, setStatus] = useState(
@@ -155,7 +162,7 @@ export default function DetalhePedidoScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

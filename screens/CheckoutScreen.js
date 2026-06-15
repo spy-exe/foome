@@ -4,7 +4,7 @@ import {
   StatusBar, Platform, TextInput, ScrollView,
   Modal, Alert, KeyboardAvoidingView,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import Animated, {
   FadeIn,
   SlideInDown,
@@ -15,10 +15,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatarPreco } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { useApp } from '../contexts/AppContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 import { verificarBiometria } from '../services/biometria';
 import { salvarPedidos, getPedidos } from '../services/storage';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const STORAGE_KEY = '@foome_enderecos';
 
@@ -38,6 +40,8 @@ const ENDERECOS_MOCK = [
 
 /* ═══════════════════ ETAPA 1 — Endereço ═══════════════════ */
 function StepEndereco({ enderecos, enderecoSel, onSelect, observacao, setObservacao, onAddEndereco, onDeleteEndereco }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.stepContainer}>
       <Text style={s.stepTitle}>Endereço de entrega</Text>
@@ -103,6 +107,8 @@ function StepEndereco({ enderecos, enderecoSel, onSelect, observacao, setObserva
 
 /* ═══════════════════ ETAPA 2 — Pagamento ═══════════════════ */
 function StepPagamento({ metodoSel, onSelectMetodo, troco, setTroco, semTroco, setSemTroco }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.stepContainer}>
       <Text style={s.stepTitle}>Forma de pagamento</Text>
@@ -141,6 +147,8 @@ function StepPagamento({ metodoSel, onSelectMetodo, troco, setTroco, semTroco, s
 }
 
 function SubPix() {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.subCard}>
       <View style={s.qrPlaceholder}>
@@ -176,6 +184,8 @@ function SubPix() {
 }
 
 function SubCartao({ tipo }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.subCard}>
       <Text style={s.subLabel}>{tipo}</Text>
@@ -215,6 +225,8 @@ function SubCartao({ tipo }) {
 }
 
 function SubDinheiro({ troco, setTroco, semTroco, setSemTroco }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.subCard}>
       <Text style={s.subLabel}>Troco para quanto?</Text>
@@ -242,6 +254,8 @@ function SubDinheiro({ troco, setTroco, semTroco, setSemTroco }) {
 
 /* ═══════════════════ ETAPA 3 — Revisão ═══════════════════ */
 function StepRevisao({ endereco, metodo, observacao, total, restaurante, itens, taxaEntrega }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   return (
     <Animated.View entering={FadeIn.duration(300)} style={s.stepContainer}>
       <Text style={s.stepTitle}>Revise seu pedido</Text>
@@ -320,6 +334,8 @@ function StepRevisao({ endereco, metodo, observacao, total, restaurante, itens, 
 
 /* ═══════════════════ MODAL Novo Endereço ═══════════════════ */
 function NovoEnderecoModal({ visible, onClose, onSave }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [label, setLabel] = useState('');
   const [cep, setCep] = useState('');
   const [rua, setRua] = useState('');
@@ -413,6 +429,7 @@ function NovoEnderecoModal({ visible, onClose, onSave }) {
 
 /* ═══════════════════ BARRA DE PROGRESSO ═══════════════════ */
 function ProgressBar({ etapaAtual }) {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.progressContainer}>
       {ETAPAS.map((label, idx) => {
@@ -441,6 +458,8 @@ function ProgressBar({ etapaAtual }) {
 
 /* ═══════════════════ TELA PRINCIPAL ═══════════════════ */
 export default function CheckoutScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { itens, restaurante, totalPreco, limpar } = useCarrinho();
   const { atualizarPedidosCount } = useApp();
@@ -668,7 +687,7 @@ export default function CheckoutScreen({ navigation }) {
 }
 
 /* ═══════════════════ ESTILOS ═══════════════════ */
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

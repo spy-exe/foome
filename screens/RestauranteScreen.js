@@ -14,15 +14,17 @@ import Reanimated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { formatarPreco } from '../services/dados';
 import { getNotaMediaRestaurante } from '../services/avaliacao';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import RestauranteProdutoCard from '../components/RestauranteProdutoCard';
 import SubcategoriaTabs from '../components/SubcategoriaTabs';
 import ProdutoDetalhesSheet from '../components/ProdutoDetalhesSheet';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const HEADER_MAX = 220;
 const HEADER_MIN = 100;
@@ -47,6 +49,8 @@ function classificarProduto(produto) {
 }
 
 export default function RestauranteScreen({ route, navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const restaurante = route?.params?.restaurante;
   const { adicionar, remover, totalItens, totalPreco, itens, setRestaurante } = useCarrinho();
   const [notaMedia, setNotaMedia] = useState(null);
@@ -257,7 +261,7 @@ export default function RestauranteScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   header: {
     paddingTop: Platform.OS === 'ios' ? 52 : 42,

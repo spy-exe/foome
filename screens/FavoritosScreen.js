@@ -2,13 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Heart } from 'lucide-react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { getFavoritos, removerFavorito } from '../services/storage';
 import { RESTAURANTES } from '../services/dados';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function FavoritosScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [restaurantes, setRestaurantes] = useState([]);
 
@@ -74,7 +78,7 @@ export default function FavoritosScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingBottom: S.md, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { fontFamily: F.uiBold, fontSize: 18, color: C.ink },

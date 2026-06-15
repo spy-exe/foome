@@ -5,9 +5,11 @@ import {
 } from 'react-native';
 import { Star, Check, ArrowRight, X } from 'lucide-react-native';
 import { salvarAvaliacao } from '../services/avaliacao';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const TITULOS_POR_NOTA = {
   1: 'Que pena...',
@@ -18,6 +20,8 @@ const TITULOS_POR_NOTA = {
 };
 
 export default function AvaliacaoModal({ visivel, pedido, onClose }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState('');
   const [enviado, setEnviado] = useState(false);
@@ -119,7 +123,7 @@ export default function AvaliacaoModal({ visivel, pedido, onClose }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   overlay: {
     flex: 1, backgroundColor: 'rgba(23,23,43,0.5)',
     justifyContent: 'center', padding: S.xl,

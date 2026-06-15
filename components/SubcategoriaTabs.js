@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { C, F, R, S } from '../constants/theme';
+import { F, R, S } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function SubcategoriaTabs({ tabs, atual, onChange, cor }) {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.subTabBar}>
       <FlatList
@@ -33,7 +36,7 @@ export default function SubcategoriaTabs({ tabs, atual, onChange, cor }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   subTabBar: {
     backgroundColor: C.offWhite,
     paddingBottom: S.md,

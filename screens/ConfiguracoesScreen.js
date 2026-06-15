@@ -7,15 +7,17 @@ import { useCarrinho } from '../contexts/CarrinhoContext';
 import { limparTodosDadosFoome } from '../services/storage';
 import { logout as authLogout } from '../services/auth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const TERMOS_USO = `1. Aceitação dos Termos\nAo usar o Foome, você concorda com estes termos.\n\n2. Serviços\nO Foome conecta usuários a restaurantes parceiros para entrega de alimentos.\n\n3. Responsabilidades\nOs pedidos são de responsabilidade dos restaurantes parceiros.\n\n4. Cancelamentos\nCancelamentos podem ser feitos em até 5 minutos após a confirmação.`;
 
 const POLITICA_PRIVACIDADE = `1. Coleta de Dados\nColetamos nome, e-mail, endereço e dados de uso para melhorar sua experiência.\n\n2. Uso dos Dados\nSeus dados são usados para processar pedidos e recomendar restaurantes.\n\n3. Compartilhamento\nCompartilhamos dados apenas com restaurantes parceiros para viabilizar entregas.\n\n4. Segurança\nUtilizamos criptografia para proteger suas informações.`;
 
 export default function ConfiguracoesScreen({ navigation }) {
+  const { C, isDark, toggle } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
-  const { isDark, toggle } = useTheme();
   const { logout } = useApp();
   const { limpar } = useCarrinho();
   const [fonteGrande, setFonteGrande] = useState(false);
@@ -93,7 +95,7 @@ export default function ConfiguracoesScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingBottom: S.md, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { fontFamily: F.uiBold, fontSize: 18, color: C.ink },

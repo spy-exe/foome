@@ -1,12 +1,16 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { C, F, R } from '../constants/theme';
+import { F, R } from '../constants/theme';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function PrimaryButton({
   label, onPress, color, variant = 'brand',
   disabled, loading, style, leftIcon,
 }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const bg = variant === 'midnight' ? C.midnight
     : variant === 'outline' ? 'transparent'
     : color ?? C.brand;
@@ -42,7 +46,7 @@ export default function PrimaryButton({
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   btn: {
     flexDirection: 'row',
     borderRadius: R.lg,

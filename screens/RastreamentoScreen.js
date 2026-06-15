@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   StatusBar, Platform,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import MapView, { Marker } from 'react-native-maps';
 import Animated, {
   useAnimatedStyle,
@@ -17,23 +17,25 @@ import Animated, {
 import { atualizarStatusPedido } from '../services/storage';
 import { getAvaliacaoPedido } from '../services/avaliacao';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 import AvaliacaoModal from '../components/AvaliacaoModal';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
-const STATUS_DISPLAY = {
+const makeStatusDisplay = (C) => ({
   confirmado: { label: 'Pedido confirmado',  icon: 'check-circle',  cor: C.teal   },
   preparando: { label: 'Em preparo',         icon: 'clock',         cor: C.amber  },
   a_caminho:  { label: 'Saiu para entrega',  icon: 'truck',         cor: C.brand  },
   entregue:   { label: 'Pedido entregue!',   icon: 'home',          cor: C.teal   },
-};
+});
 
-const STATUS_BG = {
+const makeStatusBg = (C) => ({
   confirmado: C.tealLight,
   preparando: C.amberLight,
   a_caminho:  C.brandLight,
   entregue:   C.tealLight,
-};
+});
 
 const STATUS_SUBTEXTO = {
   confirmado: 'Aguardando o restaurante confirmar seu pedido',
@@ -68,6 +70,8 @@ function usePulseAnim(ativo) {
 }
 
 function EtapaIcon({ concluido, ativo, icon }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -102,6 +106,8 @@ function EtapaIcon({ concluido, ativo, icon }) {
 }
 
 function EtapaLinha({ concluida }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const largura = useSharedValue(0);
 
   useEffect(() => {
@@ -123,6 +129,10 @@ function EtapaLinha({ concluida }) {
 }
 
 export default function RastreamentoScreen({ route, navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const STATUS_DISPLAY = makeStatusDisplay(C);
+  const STATUS_BG = makeStatusBg(C);
   const insets = useSafeAreaInsets();
   const pedido = route.params.pedido;
   const [status, setStatus] = useState(pedido.status || 'confirmado');
@@ -302,7 +312,7 @@ export default function RastreamentoScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

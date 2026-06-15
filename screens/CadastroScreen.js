@@ -11,13 +11,15 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { cadastrar } from '../services/auth';
 import { useApp } from '../contexts/AppContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const ETAPAS = ['form', 'camera', 'preview'];
 
@@ -26,6 +28,7 @@ function getEtapaIndex(etapa) {
 }
 
 function ProgressBar({ etapa, dark }) {
+  const s = useThemedStyles(makeStyles);
   const width = useSharedValue((getEtapaIndex(etapa) + 1) / ETAPAS.length);
 
   useEffect(() => {
@@ -44,6 +47,7 @@ function ProgressBar({ etapa, dark }) {
 }
 
 function StepIndicator({ etapa, dark, style }) {
+  const s = useThemedStyles(makeStyles);
   const idx = getEtapaIndex(etapa);
 
   return (
@@ -55,6 +59,7 @@ function StepIndicator({ etapa, dark, style }) {
 }
 
 function CameraOverlay() {
+  const s = useThemedStyles(makeStyles);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
@@ -81,6 +86,7 @@ function CameraOverlay() {
 }
 
 function AnimatedPreviewImage({ uri }) {
+  const s = useThemedStyles(makeStyles);
   const scale = useSharedValue(0.9);
   const opacity = useSharedValue(0);
 
@@ -116,6 +122,8 @@ function AnimatedCheckIcon() {
 }
 
 export default function CadastroScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const { login } = useApp();
   const [etapa, setEtapa]         = useState('form');
   const [nome, setNome]           = useState('');
@@ -428,7 +436,7 @@ export default function CadastroScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 24, paddingTop: Platform.OS === 'ios' ? 60 : 48, paddingBottom: 48 },
   center: { flex: 1, backgroundColor: C.surface, justifyContent: 'center', alignItems: 'center', padding: 32 },

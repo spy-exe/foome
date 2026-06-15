@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatarPreco } from '../services/dados';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
 import Stepper from './Stepper';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function ProdutoCard({ produto, cor, quantidade, onPress, onAdicionar, onRemover, categoria }) {
+  const s = useThemedStyles(makeStyles);
   const gradCores = CORES_CATEGORIA[categoria] || [cor, cor + '88'];
 
   return (
@@ -42,7 +45,7 @@ const CORES_CATEGORIA = {
   sobremesas: ['#7C3AED', '#4C1D95'],
 };
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',

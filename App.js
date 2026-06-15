@@ -8,17 +8,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Utensils } from 'lucide-react-native';
 
 import {
-  NotoSans_400Regular,
-  NotoSans_500Medium,
-  NotoSans_600SemiBold,
-  NotoSans_700Bold,
-} from '@expo-google-fonts/noto-sans';
-import {
   Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import {
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from '@expo-google-fonts/poppins';
 import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
@@ -133,10 +132,9 @@ function SplashAnimada({ onFinish, onLayout }) {
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
-    NotoSans_400Regular, NotoSans_500Medium,
-    NotoSans_600SemiBold, NotoSans_700Bold,
     Inter_400Regular, Inter_500Medium,
     Inter_600SemiBold, Inter_700Bold,
+    Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold,
     JetBrainsMono_400Regular, JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });

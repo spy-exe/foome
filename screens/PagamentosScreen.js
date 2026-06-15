@@ -4,18 +4,23 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Trash2, X, QrCode, CreditCard, DollarSign } from 'lucide-react-native';
 import { getPagamentos, adicionarPagamento, removerPagamento } from '../services/storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const DEFAULT_PAGAMENTOS = [{ id: '1', tipo: 'pix', label: 'PIX', sub: 'Chave: seu@email.com', default: true }];
 
-const TIPO_CONFIG = {
+const makeTipoConfig = (C) => ({
   pix: { icon: QrCode, cor: C.success, bg: C.successLight, label: 'PIX' },
   credito: { icon: CreditCard, cor: C.midnight, bg: C.midnightLight, label: 'Crédito' },
   debito: { icon: CreditCard, cor: C.midnight, bg: C.midnightLight, label: 'Débito' },
   dinheiro: { icon: DollarSign, cor: C.warning, bg: C.warningLight, label: 'Dinheiro' },
-};
+});
 
 export default function PagamentosScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const TIPO_CONFIG = makeTipoConfig(C);
   const insets = useSafeAreaInsets();
   const [pagamentos, setPagamentos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -156,7 +161,7 @@ export default function PagamentosScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingBottom: S.md, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { fontFamily: F.uiBold, fontSize: 18, color: C.ink },

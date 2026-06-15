@@ -7,10 +7,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Plus, Minus } from 'lucide-react-native';
-import { C, F, R } from '../constants/theme';
+import { F, R } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const slideY = useSharedValue(0);
   const prevQtd = useSharedValue(quantidade);
 
@@ -65,7 +69,7 @@ export default function Stepper({ quantidade, cor, onAdicionar, onRemover }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   addBtn: {
     width: 36, height: 36,
     borderRadius: R.full,

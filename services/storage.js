@@ -29,3 +29,17 @@ export const atualizarStatusPedido = async (id, novoStatus) => {
   );
   await AsyncStorage.setItem('@foome_pedidos', JSON.stringify(atualizados));
 };
+
+// Chaves persistidas pelo Foome no AsyncStorage.
+export const CHAVES_FOOME = [
+  '@foome_usuario',
+  '@foome_pedidos',
+  '@foome_avaliacoes',
+  '@foome_tema',
+  '@foome_onboarding_done',
+  '@foome_token',
+];
+
+export async function limparTodosDadosFoome() {
+  await AsyncStorage.multiRemove(CHAVES_FOOME);
+}

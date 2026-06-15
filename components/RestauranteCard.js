@@ -2,9 +2,11 @@ import React, { memo, useRef } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Clock, ChefHat, Truck } from 'lucide-react-native';
-import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
+import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const ICON_MAP = {
   '🍔': ChefHat, '🍕': ChefHat, '🍣': ChefHat,
@@ -13,6 +15,8 @@ const ICON_MAP = {
 };
 
 const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const gratis  = restaurante.entrega === 'Grátis';
   const popular = restaurante.avaliacao >= 4.8;
   const scale = useRef(new Animated.Value(1)).current;
@@ -90,7 +94,7 @@ const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) 
   );
 });
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   card: {
     backgroundColor: C.surface,
     marginHorizontal: S.lg,

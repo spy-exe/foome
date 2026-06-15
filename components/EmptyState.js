@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Package } from 'lucide-react-native';
-import { C, F, R, S } from '../constants/theme';
+import { F, R, S } from '../constants/theme';
 import { ICON_SIZE, ICON_COLOR_DEFAULT } from '../constants/icons';
 import PrimaryButton from './PrimaryButton';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function EmptyState({
   icon: Icon = Package,
@@ -12,6 +14,7 @@ export default function EmptyState({
   ctaLabel,
   onCtaPress,
 }) {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.wrap}>
       <View style={s.iconWrap}>
@@ -26,7 +29,7 @@ export default function EmptyState({
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   wrap: {
     alignItems: 'center',
     paddingVertical: S.xxl,

@@ -4,12 +4,14 @@ import {
   StatusBar, Animated, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import * as Location from 'expo-location';
 import { RESTAURANTES } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const CARD_H   = 320;
 const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04, longitudeDelta: 0.04 };
@@ -49,6 +51,8 @@ const CORES_CATEGORIA = {
 };
 
 export default function MapaScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const { setRestaurante } = useCarrinho();
   const [locOk,    setLocOk]    = useState(false);
   const [buscando, setBuscando] = useState(true);
@@ -340,7 +344,7 @@ export default function MapaScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
 
   header: {

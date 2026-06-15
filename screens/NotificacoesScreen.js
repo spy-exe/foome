@@ -2,10 +2,12 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Bell, Package, Tag, CheckCheck } from 'lucide-react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { getNotificacoes, salvarNotificacoes, marcarNotificacaoLida, marcarTodasLidas } from '../services/storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, R, S, SHADOW } from '../constants/theme';
+import { F, R, S, SHADOW } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const NOTIF_MOCK = [
   { id: '1', tipo: 'entregue', titulo: 'Pedido entregue!', corpo: 'Seu pedido do Burger Supreme chegou. Bom apetite!', lida: false, ts: Date.now() - 300000 },
@@ -13,11 +15,11 @@ const NOTIF_MOCK = [
   { id: '3', tipo: 'confirmado', titulo: 'Pedido confirmado', corpo: 'Sushi Zen confirmou seu pedido.', lida: true, ts: Date.now() - 86400000 },
 ];
 
-const TIPO_CONFIG = {
+const makeTipoConfig = (C) => ({
   entregue: { icon: Package, cor: C.success },
   promo: { icon: Tag, cor: C.warning },
   confirmado: { icon: CheckCheck, cor: C.brand },
-};
+});
 
 function formatarTempo(ts) {
   const diff = Date.now() - ts;
@@ -30,6 +32,9 @@ function formatarTempo(ts) {
 }
 
 export default function NotificacoesScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const TIPO_CONFIG = makeTipoConfig(C);
   const insets = useSafeAreaInsets();
   const [notificacoes, setNotificacoes] = useState([]);
   const [prefs, setPrefs] = useState({ pedidos: true, promocoes: true, novos: false });
@@ -113,7 +118,7 @@ export default function NotificacoesScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingBottom: S.md, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { fontFamily: F.uiBold, fontSize: 18, color: C.ink },

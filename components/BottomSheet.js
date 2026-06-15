@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { C, R, SHADOW, S } from '../constants/theme';
+import { R, SHADOW, S } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function BottomSheet({
   visivel,
@@ -14,6 +16,7 @@ export default function BottomSheet({
   altura = 350,
   children,
 }) {
+  const s = useThemedStyles(makeStyles);
   const translateY = useRef(new Animated.Value(altura)).current;
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export default function BottomSheet({
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   backdrop: {
     backgroundColor: 'rgba(0,0,0,0.45)',
   },

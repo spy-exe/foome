@@ -1,16 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { CheckCircle2, AlertCircle, Bell, X } from 'lucide-react-native';
-import { C, F, R, S } from '../constants/theme';
+import { F, R, S } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
-const CONFIG = {
+const makeConfig = (C) => ({
   sucesso: { bg: C.success, icon: CheckCircle2 },
   erro: { bg: C.error, icon: AlertCircle },
   info: { bg: C.info, icon: Bell },
-};
+});
 
 export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000, onClose }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
+  const CONFIG = makeConfig(C);
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -76,7 +81,7 @@ export default function Toast({ tipo = 'info', mensagem, visivel, duracao = 3000
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 60,

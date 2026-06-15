@@ -13,9 +13,11 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatarPreco } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, R, S, SHADOW, TYPE } from '../constants/theme';
+import { F, R, S, SHADOW, TYPE } from '../constants/theme';
 import Stepper from '../components/Stepper';
 import Toast from '../components/Toast';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const TAMANHOS = [
   { id: 'p', label: 'Pequeno', extra: 0 },
@@ -46,6 +48,8 @@ function classificarProduto(produto) {
 }
 
 export default function ProdutoDetalheScreen({ route, navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const { produto, restaurante } = route.params || {};
   const insets = useSafeAreaInsets();
   const { adicionar } = useCarrinho();
@@ -237,7 +241,7 @@ export default function ProdutoDetalheScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.surface,

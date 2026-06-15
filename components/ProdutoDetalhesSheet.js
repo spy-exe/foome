@@ -12,12 +12,16 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { formatarPreco } from '../services/dados';
-import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
+import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
 import PrimaryButton from './PrimaryButton';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 function BottomSheetSimples({ visible, onClose, onDismiss, children }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [mounted, setMounted] = useState(visible);
   const translateY = useRef(new RNAnimated.Value(360)).current;
   const backdropOpacity = useRef(new RNAnimated.Value(0)).current;
@@ -111,6 +115,8 @@ export default function ProdutoDetalhesSheet({
   onClose,
   onDismiss,
 }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   if (!produto) return null;
 
   return (
@@ -161,7 +167,7 @@ export default function ProdutoDetalhesSheet({
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   modalRoot: {
     flex: 1,
     justifyContent: 'flex-end',

@@ -4,7 +4,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Compass, ShoppingBag, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { C, F } from '../constants/theme';
+import { F } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import HomeStack from './HomeStack';
 import PedidosTabIcon from './PedidosTabIcon';
 import MapaScreen from '../screens/MapaScreen';
@@ -19,6 +20,7 @@ function TabIcon({ icon: Icon, color, focused }) {
 
 export default function TabNavigator() {
   const insets = useSafeAreaInsets();
+  const { C } = useTheme();
 
   return (
     <Tab.Navigator

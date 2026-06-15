@@ -8,9 +8,11 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { C } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function SkeletonShimmer({ style }) {
+  const s = useThemedStyles(makeStyles);
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function SkeletonShimmer({ style }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   base: {
     overflow: 'hidden',
     backgroundColor: C.surfaceAlt,

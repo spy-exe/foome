@@ -6,15 +6,17 @@ import {
 
 const { width } = Dimensions.get('window');
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { RESTAURANTES, formatarPreco } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, TYPE, S, R, SHADOW } from '../constants/theme';
+import { F, TYPE, S, R, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
 import BottomSheet from '../components/BottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const AS_KEY = '@foome_buscas';
 const MAX_TERMOS = 8;
@@ -38,6 +40,7 @@ const CAT_MAP = {
 
 /* ── Radio / Toggle helpers ── */
 function RadioGroup({ opcoes, valor, onChange }) {
+  const s = useThemedStyles(makeStyles);
   return (
     <View style={s.radioGroup}>
       {opcoes.map(op => {
@@ -61,6 +64,8 @@ function RadioGroup({ opcoes, valor, onChange }) {
 }
 
 export default function BuscaScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { setRestaurante } = useCarrinho();
   const inputRef = useRef(null);
@@ -468,7 +473,7 @@ export default function BuscaScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.offWhite },
 
   header: {

@@ -8,9 +8,11 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { formatarPreco } from '../services/dados';
-import { C, F, TYPE, R, S, SHADOW } from '../constants/theme';
+import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import Stepper from './Stepper';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
   item,
@@ -20,6 +22,7 @@ const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
   onRemover,
   onPress,
 }) {
+  const s = useThemedStyles(makeStyles);
   const addScale = useSharedValue(1);
   const addY = useSharedValue(0);
   const addOpacity = useSharedValue(1);
@@ -85,7 +88,7 @@ const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
   );
 });
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',

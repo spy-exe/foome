@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
-import { C, R } from '../constants/theme';
+import { R } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function SkeletonLoader({
   width = '100%',
@@ -8,6 +10,7 @@ export default function SkeletonLoader({
   borderRadius = R.md,
   style,
 }) {
+  const { C } = useTheme();
   const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

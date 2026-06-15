@@ -13,16 +13,20 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { autenticar } from '../services/auth';
 import { verificarBiometria } from '../services/biometria';
 import { useApp } from '../contexts/AppContext';
-import { C, F, SHADOW } from '../constants/theme';
+import { F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 function BioButton({ onPress, loading }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const pulse = useSharedValue(1);
   const shimmer = useSharedValue(0);
 
@@ -82,6 +86,8 @@ function BioButton({ onPress, loading }) {
 }
 
 export default function LoginScreen({ navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const [email, setEmail]           = useState('');
   const [senha, setSenha]           = useState('');
   const [verSenha, setVerSenha]     = useState(false);
@@ -318,7 +324,7 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: C.surface },
   scroll: { flexGrow: 1 },
 

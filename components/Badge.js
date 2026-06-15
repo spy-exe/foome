@@ -6,9 +6,13 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import { C, F, R, S } from '../constants/theme';
+import { F, R, S } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
-export default function Badge({ value = 0, cor = C.brand, max = 99 }) {
+export default function Badge({ value = 0, cor, max = 99 }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -29,13 +33,13 @@ export default function Badge({ value = 0, cor = C.brand, max = 99 }) {
   const display = value > max ? `${max}+` : String(value);
 
   return (
-    <Animated.View style={[s.badge, { backgroundColor: cor }, animatedStyle]}>
+    <Animated.View style={[s.badge, { backgroundColor: cor || C.brand }, animatedStyle]}>
       <Animated.Text style={s.txt}>{display}</Animated.Text>
     </Animated.View>
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   badge: {
     minWidth: 20,
     height: 20,

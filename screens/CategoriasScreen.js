@@ -3,13 +3,15 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   FlatList, Platform,
 } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '../components/Icon';
 import { RESTAURANTES } from '../services/dados';
 import { useCarrinho } from '../contexts/CarrinhoContext';
-import { C, F, TYPE, S, R, SHADOW } from '../constants/theme';
+import { F, TYPE, S, R, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../utils/haptics';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 
 const CATEGORIA_ICONES = {
   hamburgueres: 'fast-food',
@@ -29,6 +31,8 @@ const CAT_MAP = {
 };
 
 export default function CategoriasScreen({ route, navigation }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { categoria, label } = route.params || {};
   const { setRestaurante } = useCarrinho();
@@ -89,7 +93,7 @@ export default function CategoriasScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

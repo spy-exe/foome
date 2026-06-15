@@ -8,10 +8,14 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { C, F } from '../constants/theme';
+import { F } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/useThemedStyles';
 import { usePedidosCount } from '../contexts/AppContext';
 
 export default function PedidosTabIcon({ color, focused }) {
+  const { C } = useTheme();
+  const s = useThemedStyles(makeStyles);
   const count = usePedidosCount();
   const scale = useSharedValue(1);
 
@@ -40,7 +44,7 @@ export default function PedidosTabIcon({ color, focused }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   wrap: {
     width: 28,
     height: 28,
