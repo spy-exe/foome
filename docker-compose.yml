@@ -1,4 +1,39 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: foome_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-foome}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-foome}
+      POSTGRES_DB: ${POSTGRES_DB:-foome}
+    ports:
+      - "${FOOME_DB_PORT:-5432}:5432"
+    volumes:
+      - foome_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-foome} -d ${POSTGRES_DB:-foome}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: foome_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-foome}:${POSTGRES_PASSWORD:-foome}@db:5432/${POSTGRES_DB:-foome}
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-em-producao}
+    ports:
+      - "${FOOME_API_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+
   foome-landing:
     build:
       context: ./landing
@@ -9,3 +44,6 @@ services:
     container_name: foome_landing
     environment:
       - NODE_ENV=production
+
+volumes:
+  foome_pgdata:
