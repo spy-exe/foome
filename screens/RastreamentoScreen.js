@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  StatusBar, Platform,
+  StatusBar, Platform, TextInput, Alert,
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import MapView, { Marker } from 'react-native-maps';
@@ -14,7 +14,7 @@ import Animated, {
   Easing,
   SlideInDown,
 } from 'react-native-reanimated';
-import { avancarStatus } from '../services/pedidos';
+import { avancarStatus, obterPedido, confirmarEntrega } from '../services/pedidos';
 import { getAvaliacaoPedido } from '../services/avaliacao';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, SHADOW } from '../constants/theme';
@@ -135,64 +135,72 @@ export default function RastreamentoScreen({ route, navigation }) {
   const STATUS_BG = makeStatusBg(C);
   const insets = useSafeAreaInsets();
   const pedido = route.params.pedido;
-  const [status, setStatus] = useState(pedido.status || 'confirmado');
+  const [order, setOrder] = useState(pedido);
+  const status = order.status || 'confirmado';
+  const codigoEntrega = order.codigoEntrega;
+  const [codigoInput, setCodigoInput] = useState('');
+  const [confirmando, setConfirmando] = useState(false);
   const [showAvaliacao, setShowAvaliacao] = useState(false);
-  const [entregadorVisivel, setEntregadorVisivel] = useState(status === 'a_caminho' || status === 'entregue');
-  const [timestamps, setTimestamps] = useState({});
   const avaliacaoVerificada = useRef(false);
+
+  const entregadorVisivel = status === 'a_caminho' || status === 'entregue';
+
+  // Timestamps reais vindos do histórico do pedido (order_status_history).
+  const timestamps = useMemo(() => {
+    const map = {};
+    (order.historico || []).forEach(h => {
+      if (!map[h.status]) {
+        map[h.status] = new Date(h.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      }
+    });
+    return map;
+  }, [order.historico]);
 
   const idxAtual = STATUS_ORDEM.indexOf(status);
   const statusCfg = STATUS_DISPLAY[status] || STATUS_DISPLAY.confirmado;
   const statusBg = STATUS_BG[status] || STATUS_BG.confirmado;
   const pulseAnim = usePulseAnim(status !== 'entregue');
 
-  useEffect(() => {
-    if (status === 'a_caminho' && !entregadorVisivel) {
-      setEntregadorVisivel(true);
-    }
-  }, [status, entregadorVisivel]);
+  const recarregar = useCallback(async () => {
+    try { setOrder(await obterPedido(pedido.id)); } catch {}
+  }, [pedido.id]);
+
+  useEffect(() => { recarregar(); }, [recarregar]);
 
   useEffect(() => {
     if (status === 'entregue' && !avaliacaoVerificada.current) {
       avaliacaoVerificada.current = true;
-      const timer = setTimeout(async () => {
-        const existente = await getAvaliacaoPedido(pedido.id);
-        if (!existente) setShowAvaliacao(true);
-      }, 1500);
-      return () => clearTimeout(timer);
+      getAvaliacaoPedido(pedido.id).then(existente => { if (!existente) setShowAvaliacao(true); });
     }
   }, [status, pedido.id]);
 
-  function handleSimularAvancar(novoStatus) {
-    const agora = new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit', minute: '2-digit',
-    });
-    setStatus(novoStatus);
-    setTimestamps(prev => ({ ...prev, [novoStatus]: agora }));
-    haptic.medium();
-    // Nudge best-effort no servidor (Fase 5 reconstrói com delivery_code/timeline).
-    avancarStatus(pedido.id).catch(() => {});
-  }
-
+  // Avança no servidor (simula a cozinha) até "a caminho". A entrega final
+  // (DELIVERED) só acontece com o código, via confirm-delivery.
   useEffect(() => {
-    if (status === 'entregue') return;
+    if (status === 'a_caminho' || status === 'entregue') return undefined;
+    const t = setTimeout(async () => {
+      try {
+        setOrder(await avancarStatus(pedido.id));
+        haptic.medium();
+      } catch {}
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [status, pedido.id]);
 
-    const timers = [];
-    const duracaoMap = {
-      confirmado: 30000,
-      preparando: 60000,
-      a_caminho:  45000,
-    };
-
-    const t = setTimeout(() => {
-      const map = { confirmado: 'preparando', preparando: 'a_caminho', a_caminho: 'entregue' };
-      const prox = map[status];
-      if (prox) handleSimularAvancar(prox);
-    }, duracaoMap[status] || 30000);
-
-    timers.push(t);
-    return () => timers.forEach(clearTimeout);
-  }, [status]);
+  async function confirmarEntregaComCodigo() {
+    if (codigoInput.length !== 4 || confirmando) return;
+    haptic.light();
+    setConfirmando(true);
+    try {
+      setOrder(await confirmarEntrega(pedido.id, codigoInput));
+      haptic.success();
+    } catch (e) {
+      haptic.error();
+      Alert.alert('Código incorreto', e?.mensagem || 'Confira o código de 4 dígitos da entrega.');
+    } finally {
+      setConfirmando(false);
+    }
+  }
 
   const pedidoId = `#${String(pedido.id).slice(-6)}`;
   const restLat = pedido.restauranteLat ?? -22.4012;
@@ -304,6 +312,31 @@ export default function RastreamentoScreen({ route, navigation }) {
         </Animated.View>
       )}
 
+      {status === 'a_caminho' && (
+        <Animated.View style={s.codigoCard} entering={SlideInDown.duration(400).springify().damping(14)}>
+          <Text style={s.codigoTitulo}>Código de entrega</Text>
+          <Text style={s.codigoSub}>Mostre ao entregador ou confirme ao receber seu pedido.</Text>
+          <Text style={s.codigoValor}>{codigoEntrega}</Text>
+          <TextInput
+            style={s.codigoInput}
+            value={codigoInput}
+            onChangeText={t => setCodigoInput(t.replace(/[^0-9]/g, '').slice(0, 4))}
+            placeholder="Digite o código de 4 dígitos"
+            placeholderTextColor={C.ink4}
+            keyboardType="number-pad"
+            maxLength={4}
+          />
+          <TouchableOpacity
+            style={[s.codigoBtn, (codigoInput.length !== 4 || confirmando) && { opacity: 0.5 }]}
+            onPress={confirmarEntregaComCodigo}
+            disabled={codigoInput.length !== 4 || confirmando}
+            activeOpacity={0.85}
+          >
+            <Text style={s.codigoBtnTxt}>{confirmando ? 'Confirmando...' : 'Confirmar entrega'}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       <AvaliacaoModal
         visivel={showAvaliacao}
         pedido={pedido}
@@ -314,6 +347,28 @@ export default function RastreamentoScreen({ route, navigation }) {
 }
 
 const makeStyles = (C) => StyleSheet.create({
+  codigoCard: {
+    position: 'absolute', left: 16, right: 16, bottom: 24,
+    backgroundColor: C.surface, borderRadius: 20, padding: 20,
+    ...SHADOW.float,
+  },
+  codigoTitulo: { fontFamily: F.heading, fontSize: 17, color: C.ink },
+  codigoSub: { fontFamily: F.body, fontSize: 13, color: C.inkLight, marginTop: 4 },
+  codigoValor: {
+    fontFamily: F.monoBold, fontSize: 34, color: C.brand,
+    letterSpacing: 8, textAlign: 'center', marginVertical: 12,
+  },
+  codigoInput: {
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 14,
+    paddingVertical: 12, paddingHorizontal: 16, fontFamily: F.monoMedium,
+    fontSize: 18, color: C.ink, textAlign: 'center', letterSpacing: 4,
+  },
+  codigoBtn: {
+    backgroundColor: C.brand, borderRadius: 14, paddingVertical: 14,
+    alignItems: 'center', marginTop: 12,
+  },
+  codigoBtnTxt: { fontFamily: F.uiBold, fontSize: 15, color: '#fff' },
+
   root: { flex: 1, backgroundColor: C.bg },
 
   header: {

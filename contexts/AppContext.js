@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { listarPedidos } from '../services/pedidos';
 import { logout as authLogout, validarSessao, atualizarPerfil } from '../services/auth';
+import { biometriaAtiva } from '../services/biometria';
 
 const AppContext = createContext(null);
 
@@ -102,14 +103,22 @@ export function AppProvider({ children }) {
     return atualizado;
   }, []);
 
+  // Com biometria ativa, "sair" apenas tranca a sessão (mantém o token) para
+  // permitir reentrar por biometria. Sem biometria, faz logout completo.
   const logout = useCallback(async () => {
+    const trancar = await biometriaAtiva();
+    if (!trancar) await authLogout();
+    dispatch({ type: 'LOGOUT' });
+  }, []);
+
+  const logoutCompleto = useCallback(async () => {
     await authLogout();
     dispatch({ type: 'LOGOUT' });
   }, []);
 
   return (
     <AppContext.Provider
-      value={{ ...state, atualizarPedidosCount, atualizarUsuario, login, logout }}
+      value={{ ...state, atualizarPedidosCount, atualizarUsuario, login, logout, logoutCompleto }}
     >
       {children}
     </AppContext.Provider>

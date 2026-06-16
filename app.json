@@ -20,7 +20,8 @@
       "bundleIdentifier": "com.foome.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Foome usa a câmera para sua foto de perfil.",
-        "NSFaceIDUsageDescription": "Foome usa biometria para confirmar suas compras."
+        "NSFaceIDUsageDescription": "Foome usa biometria para confirmar suas compras.",
+        "NSLocationWhenInUseUsageDescription": "Foome usa sua localização para mostrar restaurantes próximos e acompanhar a entrega."
       }
     },
     "android": {
@@ -32,7 +33,9 @@
       "permissions": [
         "CAMERA",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [

@@ -17,6 +17,7 @@ import { formatarPreco } from '../services/dados';
 import { listarPedidos } from '../services/pedidos';
 import { getItensFavoritos, getUltimoPedido } from '../services/recomendacao';
 import { useRestaurantes } from '../hooks/useRestaurantes';
+import { useLocalizacao, distanciaKm } from '../hooks/useLocalizacao';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
@@ -212,6 +213,7 @@ export default function HomeScreen({ navigation }) {
   const { usuario } = useApp();
   const { adicionar, limpar, setRestaurante } = useCarrinho();
   const { restaurantes, loading, erro, recarregar } = useRestaurantes();
+  const { coords } = useLocalizacao();
   const [busca, setBusca]     = useState('');
   const [termoDebounced, setTermoDebounced] = useState('');
   const [catAtiva, setCatAtiva] = useState(null);
@@ -340,14 +342,21 @@ export default function HomeScreen({ navigation }) {
 
   const hasBusca = busca.trim().length > 0;
   const termoBusca = termoDebounced || busca.trim();
-  const lista = useMemo(() => (
-    restaurantes.filter(r => {
+  const lista = useMemo(() => {
+    const filtrados = restaurantes.filter(r => {
       if (catAtiva && r.categoria !== catAtiva) return false;
       if (!termoDebounced) return true;
       const q = termoDebounced.toLowerCase();
       return r.nome.toLowerCase().includes(q) || r.categoria.toLowerCase().includes(q);
-    })
-  ), [restaurantes, catAtiva, termoDebounced]);
+    });
+    if (!coords) return filtrados;
+    // Localização disponível: ordena por proximidade.
+    return [...filtrados].sort((a, b) => {
+      const da = distanciaKm(coords, { lat: a.lat, lng: a.lng }) ?? 9999;
+      const db = distanciaKm(coords, { lat: b.lat, lng: b.lng }) ?? 9999;
+      return da - db;
+    });
+  }, [restaurantes, catAtiva, termoDebounced, coords]);
 
   return (
     <View style={s.root}>

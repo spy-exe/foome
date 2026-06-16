@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { Moon, Type, Bell, FileText, Shield, Trash2, ChevronRight } from 'lucide-react-native';
+import { Moon, Type, Bell, FileText, Shield, Trash2, ChevronRight, Fingerprint } from 'lucide-react-native';
+import { biometriaDisponivel, biometriaAtiva, setBiometriaAtiva, verificarBiometria } from '../services/biometria';
+import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
@@ -22,6 +24,33 @@ export default function ConfiguracoesScreen({ navigation }) {
   const { limpar } = useCarrinho();
   const [fonteGrande, setFonteGrande] = useState(false);
   const [pushAtivo, setPushAtivo] = useState(true);
+  const [bioAtiva, setBioAtiva] = useState(false);
+  const [bioDisponivel, setBioDisponivel] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setBioDisponivel(await biometriaDisponivel());
+      setBioAtiva(await biometriaAtiva());
+    })();
+  }, []);
+
+  async function handleToggleBio(valor) {
+    if (valor) {
+      const r = await verificarBiometria();
+      if (!r.sucesso) {
+        haptic.error();
+        Alert.alert('Biometria', 'Não foi possível ativar. Verifique a biometria cadastrada no aparelho.');
+        return;
+      }
+      await setBiometriaAtiva(true);
+      setBioAtiva(true);
+      haptic.success();
+    } else {
+      await setBiometriaAtiva(false);
+      setBioAtiva(false);
+      haptic.select();
+    }
+  }
 
   function handleExcluirConta() {
     Alert.alert('Excluir conta?', 'Todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.', [
@@ -67,6 +96,19 @@ export default function ConfiguracoesScreen({ navigation }) {
           </View>
         </View>
 
+        <Text style={s.sectionTitulo}>SEGURANÇA</Text>
+        <View style={[s.card, { backgroundColor: C.surface }]}>
+          <View style={s.prefRow}>
+            <View style={s.prefLeft}><View style={s.prefIcon}><Fingerprint size={18} color={C.midnight} /></View><Text style={s.prefLabel}>Login por biometria</Text></View>
+            <Switch value={bioAtiva} onValueChange={handleToggleBio} disabled={!bioDisponivel} trackColor={{ false: C.border, true: C.brandLight }} thumbColor={bioAtiva ? C.brand : C.inkLight} />
+          </View>
+          {!bioDisponivel && (
+            <Text style={{ fontFamily: F.body, fontSize: 12, color: C.inkLight, paddingHorizontal: S.lg, paddingBottom: S.md }}>
+              Cadastre uma biometria no seu aparelho para ativar.
+            </Text>
+          )}
+        </View>
+
         <Text style={s.sectionTitulo}>PRIVACIDADE E CONTA</Text>
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <TouchableOpacity style={s.navRow} onPress={() => Alert.alert('Termos de Uso', TERMOS_USO)} activeOpacity={0.75}>
@@ -88,7 +130,7 @@ export default function ConfiguracoesScreen({ navigation }) {
         <View style={s.footer}>
           <Text style={s.footerNome}>Foome</Text>
           <Text style={s.footerVersao}>Versão 2.0.0 (Wave 2)</Text>
-          <Text style={s.footerTagline}>Feito com ♥ no Sul Fluminense</Text>
+          <Text style={s.footerTagline}>Feito com carinho no Sul Fluminense</Text>
         </View>
       </ScrollView>
     </View>

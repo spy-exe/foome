@@ -15,7 +15,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '../components/Icon';
 import { autenticar } from '../services/auth';
-import { verificarBiometria } from '../services/biometria';
+import { verificarBiometria, biometriaAtiva } from '../services/biometria';
+import { validarSessao } from '../services/auth';
+import { getToken } from '../services/api';
 import { useApp } from '../contexts/AppContext';
 import { F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
@@ -95,7 +97,16 @@ export default function LoginScreen({ navigation }) {
   const [erros, setErros]           = useState({ email: '', senha: '' });
   const [bioLoading, setBioLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [bioPodeLogar, setBioPodeLogar] = useState(false);
   const { usuario, login } = useApp();
+
+  useEffect(() => {
+    (async () => {
+      const ativa = await biometriaAtiva();
+      const token = await getToken();
+      setBioPodeLogar(ativa && !!token);
+    })();
+  }, []);
 
   function validarEmail(valor) {
     if (!valor.trim()) return 'Informe seu e-mail';
@@ -142,21 +153,22 @@ export default function LoginScreen({ navigation }) {
 
   async function loginComBiometria() {
     haptic.light();
-    if (!usuario) {
-      haptic.error();
-      Alert.alert('Sem conta', 'Crie uma conta primeiro.');
-      return;
-    }
-
     setBioLoading(true);
     try {
       const r = await verificarBiometria();
-      if (r.sucesso) {
+      if (!r.sucesso) {
+        haptic.error();
+        Alert.alert('Biometria', typeof r.erro === 'string' && r.erro ? r.erro : 'Não foi possível autenticar.');
+        return;
+      }
+      const u = await validarSessao();
+      if (u) {
         haptic.success();
-        login(usuario);
+        login(u);
       } else {
         haptic.error();
-        Alert.alert('Biometria', r.erro || 'Não foi possível autenticar.');
+        setBioPodeLogar(false);
+        Alert.alert('Sessão expirada', 'Entre com seu e-mail e senha novamente.');
       }
     } catch {
       haptic.error();
@@ -240,7 +252,7 @@ export default function LoginScreen({ navigation }) {
         <View style={s.form}>
 
           {/* Biometria */}
-          {usuario && (
+          {bioPodeLogar && (
             <BioButton onPress={loginComBiometria} loading={bioLoading} />
           )}
 

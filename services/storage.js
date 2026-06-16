@@ -38,6 +38,12 @@ export const CHAVES_FOOME = [
   '@foome_tema',
   '@foome_onboarding_done',
   '@foome_token',
+  '@foome_refresh',
+  '@foome_biometria',
+  '@foome_foto',
+  '@foome_favoritos',
+  '@foome_enderecos',
+  '@foome_pagamentos',
 ];
 
 export async function limparTodosDadosFoome() {

@@ -76,7 +76,7 @@ export default function FavoritosScreen({ navigation }) {
         <View style={s.empty}>
           <Heart size={56} color={C.inkLight} strokeWidth={1.5} />
           <Text style={s.emptyTitulo}>Nenhum favorito ainda</Text>
-          <Text style={s.emptySub}>Toque no ♡ de qualquer restaurante para salvar</Text>
+          <Text style={s.emptySub}>Toque no coração de qualquer restaurante para salvar</Text>
           <TouchableOpacity style={s.emptyCta} onPress={() => navigation.navigate('HomeTab')} activeOpacity={0.85}>
             <Text style={s.emptyCtaTxt}>Explorar restaurantes</Text>
           </TouchableOpacity>

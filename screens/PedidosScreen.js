@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
   StatusBar, Platform, TouchableOpacity,
-  Modal, TextInput, Alert,
+  Modal, TextInput, Alert, RefreshControl,
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
@@ -39,7 +39,7 @@ const PROXIMO_STATUS = {
   a_caminho: 'entregue',
 };
 
-const NOTA_LABELS = ['', 'Ruim 😞', 'Regular 😐', 'Bom 😊', 'Muito bom 🤩', 'Excelente 🔥'];
+const NOTA_LABELS = ['', 'Ruim', 'Regular', 'Bom', 'Muito bom', 'Excelente'];
 
 function PedidosSkeletonList() {
   const s = useThemedStyles(makeStyles);
@@ -165,7 +165,23 @@ export default function PedidosScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [tabAtiva, setTabAtiva] = useState('andamento');
+
+  const onRefresh = useCallback(async () => {
+    haptic.medium();
+    setRefreshing(true);
+    try {
+      const lista = await listarPedidos();
+      setPedidos(lista);
+      atualizarPedidosCount(lista);
+      setErro(null);
+    } catch (e) {
+      setErro(normalizarErro(e).mensagem);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [atualizarPedidosCount]);
   const [showAvaliacao, setShowAvaliacao] = useState(false);
   const [pedidoParaAvaliar, setPedidoParaAvaliar] = useState(null);
   const pedidosAvaliacaoAgendados = useRef(new Set());
@@ -282,6 +298,9 @@ export default function PedidosScreen({ navigation }) {
         data={carregando ? [] : pedidosFiltrados}
         keyExtractor={i => i.id}
         contentContainerStyle={s.lista}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} colors={[C.brand]} />
+        }
         renderItem={({ item }) => {
           const status = STATUS_CONFIG[item.status ?? 'confirmado'] || STATUS_CONFIG.confirmado;
 
