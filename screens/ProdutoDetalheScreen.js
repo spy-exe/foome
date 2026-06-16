@@ -40,10 +40,10 @@ const CAT_GRADIENTES = {
 };
 
 function classificarProduto(produto) {
-  if (!produto?.emoji) return 'principais';
-  if (['🍟', '🥟', '🥑', '🫓', '🍞', '🌭'].includes(produto.emoji)) return 'entradas';
-  if (['🥤', '🍲', '🍵', '🧃'].includes(produto.emoji)) return 'bebidas';
-  if (['🍮', '🍫', '🫐', '🍓', '🧁'].includes(produto.emoji)) return 'sobremesas';
+  const t = `${produto?.nome || ''} ${produto?.descricao || ''}`.toLowerCase();
+  if (/(suco|refrigerante|bebida|smoothie|vitamina|água|agua|cerveja|drink|shake|missoshiru)/.test(t)) return 'bebidas';
+  if (/(sobremesa|tiramisu|tigela|doce|brownie|pudim|sorvete|mousse|nutella|paçoca|pacoca)/.test(t)) return 'sobremesas';
+  if (/(batata|porção|porcao|entrada|bruschetta|nachos|gyoza|guacamole|fritas|linguiça|linguica)/.test(t)) return 'entradas';
   return 'principais';
 }
 

@@ -7,6 +7,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '../components/Icon';
 import * as Location from 'expo-location';
 import { useRestaurantes } from '../hooks/useRestaurantes';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
@@ -18,26 +19,15 @@ const VASSOURAS = { latitude: -22.4033, longitude: -43.6617, latitudeDelta: 0.04
 
 const CATEGORIAS_MAPA = [
   { id: null, label: 'Todos' },
-  { id: 'Hambúrgueres', label: '🍔 Hambúrgueres' },
-  { id: 'Pizzas', label: '🍕 Pizzas' },
-  { id: 'Japonês', label: '🍣 Japonês' },
-  { id: 'Mexicano', label: '🌮 Mexicano' },
-  { id: 'Saudável', label: '🥗 Saudável' },
-  { id: 'Massas', label: '🍝 Massas' },
-  { id: 'Churrasco', label: '🥩 Churrasco' },
-  { id: 'Açaí', label: '🍇 Açaí' },
+  { id: 'Hambúrgueres', label: 'Hambúrgueres' },
+  { id: 'Pizzas', label: 'Pizzas' },
+  { id: 'Japonês', label: 'Japonês' },
+  { id: 'Mexicano', label: 'Mexicano' },
+  { id: 'Saudável', label: 'Saudável' },
+  { id: 'Massas', label: 'Massas' },
+  { id: 'Churrasco', label: 'Churrasco' },
+  { id: 'Açaí', label: 'Açaí' },
 ];
-
-const EMOJI_CATEGORIA = {
-  'Hambúrgueres': '🍔',
-  'Pizzas':       '🍕',
-  'Japonês':      '🍣',
-  'Mexicano':     '🌮',
-  'Saudável':     '🥗',
-  'Massas':       '🍝',
-  'Churrasco':    '🥩',
-  'Açaí':         '🍇',
-};
 
 const CORES_CATEGORIA = {
   'Hambúrgueres': '#E8452C',
@@ -185,9 +175,7 @@ export default function MapaScreen({ navigation }) {
                 justifyContent: 'center',
                 elevation: 4,
               }}>
-                <Text style={{ fontSize: 18, lineHeight: 22 }}>
-                  {EMOJI_CATEGORIA[rest.categoria] ?? '🍽️'}
-                </Text>
+                <CategoriaIcone categoria={rest.categoria} size={18} color={rest.cor} />
               </View>
             </View>
           </Marker>
@@ -274,7 +262,9 @@ export default function MapaScreen({ navigation }) {
                   onPress={() => escolherFiltro(cat.id)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name={cat.icon} size={14} color={ativo ? '#fff' : C.ink2} />
+                  {cat.id
+                    ? <CategoriaIcone categoria={cat.id} size={14} color={ativo ? '#fff' : C.ink2} />
+                    : <Feather name="grid" size={14} color={ativo ? '#fff' : C.ink2} />}
                   <Text style={[s.filtroTxt, ativo && s.filtroTxtOn]}>{cat.label}</Text>
                 </TouchableOpacity>
               );
@@ -292,14 +282,14 @@ export default function MapaScreen({ navigation }) {
           <>
             <View style={s.handle} />
             <View style={[s.sheetCover, { backgroundColor: `${selecionado.cor}18` }]}>
-              <Text style={s.sheetCoverEmoji}>{selecionado.emoji}</Text>
+              <CategoriaIcone categoria={selecionado.categoria} size={46} color={selecionado.cor} />
               <View style={[s.sheetCoverBadge, { backgroundColor: selecionado.cor }]}>
                 <Text style={s.sheetCoverBadgeTxt}>{selecionado.categoria}</Text>
               </View>
             </View>
             <View style={s.sheetRow}>
               <View style={[s.sheetIcon, { backgroundColor: selecionado.cor + '18' }]}>
-                <Text style={{ fontSize: 32 }}>{selecionado.emoji}</Text>
+                <CategoriaIcone categoria={selecionado.categoria} size={30} color={selecionado.cor} />
               </View>
               <View style={s.sheetInfo}>
                 <Text style={s.sheetNome}>{selecionado.nome}</Text>

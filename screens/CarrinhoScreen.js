@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { verificarBiometria } from '../services/biometria';
 import { criarPedido } from '../services/pedidos';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
@@ -115,7 +116,7 @@ function SwipeableItem({ item, cor, onDelete }) {
       onSwipeableWillOpen={hapticSelection}
     >
       <View style={s.item}>
-        <Text style={s.itemEmoji}>{item.emoji}</Text>
+        <CategoriaIcone categoria={item.categoria} size={26} color={cor} />
         <View style={s.itemInfo}>
           <Text style={s.itemNome}>{item.nome}</Text>
           <Text style={s.itemUnit}>{formatarPreco(item.preco)} / un.</Text>
@@ -399,7 +400,10 @@ export default function CarrinhoScreen({ navigation }) {
           </TouchableOpacity>
           <View style={s.headerCenter}>
             <Text style={s.titulo}>Carrinho</Text>
-            <Text style={s.restLabel}>{restauranteAtual.emoji}  {restauranteAtual.nome}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <CategoriaIcone categoria={restauranteAtual.categoria} size={14} color={restauranteAtual.cor} />
+              <Text style={s.restLabel}>{restauranteAtual.nome}</Text>
+            </View>
           </View>
           <View style={s.headerSpacer} />
         </View>

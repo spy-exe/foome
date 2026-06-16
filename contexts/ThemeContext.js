@@ -11,9 +11,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C as lightColors } from '../constants/theme';
 
 const darkColors = {
-  brand: '#E8452C',
-  brandDark: '#C73520',
-  brandLight: '#2A1513',
+  brand: '#FF4D66',
+  brandDark: '#DB1C39',
+  brandLight: '#2C1419',
+
+  accent: '#CDF564',
+  accentDark: '#A9D63B',
+  accentLight: '#23280F',
 
   ink: '#F0F0F0',
   inkMid: '#B0B0B0',
@@ -40,7 +44,7 @@ const darkColors = {
   infoLight: '#1A1A2E',
 
   // Backward-compatible aliases
-  brandBorder: '#2A1513',
+  brandBorder: '#3A1A22',
   ink2: '#B0B0B0',
   ink3: '#707070',
   ink4: '#4A4A5E',
@@ -52,7 +56,18 @@ const darkColors = {
   midnightSurface: '#1A1A30',
 };
 
-const ThemeContext = createContext(null);
+// Valor padrão (tema claro) para componentes usados fora do provider — ex.: a
+// splash, que renderiza antes da árvore de providers, e os testes isolados.
+const noop = () => {};
+const ThemeContext = createContext({
+  C: lightColors,
+  isDark: false,
+  modo: 'light',
+  preferencia: 'system',
+  reset: noop,
+  setTema: noop,
+  toggle: noop,
+});
 
 export function ThemeProvider({ children }) {
   const systemScheme = useColorScheme();
@@ -106,7 +121,5 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme deve ser usado dentro de ThemeProvider');
-  return ctx;
+  return useContext(ThemeContext);
 }

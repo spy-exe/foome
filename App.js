@@ -5,7 +5,7 @@ import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { Utensils } from 'lucide-react-native';
+import Logo from './components/Logo';
 
 import {
   Inter_400Regular,
@@ -106,24 +106,12 @@ function SplashAnimada({ onFinish, onLayout }) {
       style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}
     >
       <Animated.View style={{ opacity, transform: [{ scale }], alignItems: 'center' }}>
-        <View style={{
-          width: 90,
-          height: 90,
-          borderRadius: 28,
-          backgroundColor: C.brandLight,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom: 16,
-          borderWidth: 2,
-          borderColor: C.brandLight,
-        }}>
-          <Utensils size={44} color={C.brand} />
-        </View>
-        <Text style={{ fontFamily: F.uiBold, fontSize: 40, color: C.brand }}>
+        <Logo variant="symbol" size={104} />
+        <Text style={{ fontFamily: F.headingLg, fontSize: 42, color: C.ink, marginTop: 18, letterSpacing: -1 }}>
           Foome
         </Text>
         <Text style={{ fontFamily: F.body, fontSize: 14, color: C.inkLight, marginTop: 6 }}>
-          Comida boa, na hora certa.
+          A fome que fala.
         </Text>
       </Animated.View>
     </View>

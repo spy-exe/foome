@@ -22,6 +22,8 @@ import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
 import SkeletonShimmer from '../components/SkeletonShimmer';
+import Logo from '../components/Logo';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
@@ -88,7 +90,9 @@ function FoomeRefreshControl({ refreshing }) {
 
   return (
     <View style={s.refreshBox}>
-      <Reanimated.Text style={[s.refreshEmoji, iconStyle]}>🍔</Reanimated.Text>
+      <Reanimated.View style={iconStyle}>
+        <Logo variant="symbol" size={28} />
+      </Reanimated.View>
       <Text style={s.refreshTxt}>Buscando restaurantes...</Text>
     </View>
   );
@@ -351,6 +355,9 @@ export default function HomeScreen({ navigation }) {
 
       {/* ── Header ── */}
       <View style={s.header}>
+        <View style={{ marginBottom: 12 }}>
+          <Logo variant="full" size={24} />
+        </View>
         <View style={s.headerTop}>
           <View>
             <Text style={s.greeting}>
@@ -529,7 +536,7 @@ export default function HomeScreen({ navigation }) {
                     activeOpacity={0.85}
                   >
                     <View style={[s.favEmoji, { backgroundColor: rest.cor + '18' }]}>
-                      <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+                      <CategoriaIcone categoria={item.categoria} size={30} color={rest.cor} />
                     </View>
                     <Text style={s.favNome} numberOfLines={1}>{item.nome}</Text>
                     <Text style={[s.favPreco, { color: rest.cor }]}>

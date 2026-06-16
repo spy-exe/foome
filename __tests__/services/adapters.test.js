@@ -13,7 +13,7 @@ describe('adapters', () => {
       expect(r).toEqual(expect.objectContaining({
         id: '1', nome: 'Burger Supreme', categoria: 'Hambúrgueres',
         avaliacao: 4.8, tempo: '25–35 min', entrega: 'Grátis',
-        emoji: '🍔', cor: '#E8452C',
+        cor: '#E8452C',
       }));
       expect(r.produtos[0]).toEqual(expect.objectContaining({ id: '10', nome: 'Smash', preco: 32.9 }));
     });
@@ -40,7 +40,7 @@ describe('adapters', () => {
       const p = mapPedido(api);
       expect(p.numero).toBe('#F000007');
       expect(p.restaurante).toBe('Sushi Zen');
-      expect(p.restauranteEmoji).toBe('🍣');
+      expect(p.restauranteCategoria).toBe('Japonês');
       expect(p.restauranteRef).toEqual(expect.objectContaining({ id: '3', nome: 'Sushi Zen' }));
       expect(p.status).toBe('a_caminho');
       expect(p.codigoEntrega).toBe('1234');

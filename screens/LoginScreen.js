@@ -20,6 +20,7 @@ import { useApp } from '../contexts/AppContext';
 import { F, SHADOW } from '../constants/theme';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
+import Logo from '../components/Logo';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
@@ -217,11 +218,9 @@ export default function LoginScreen({ navigation }) {
       >
         {/* ── Marca ── */}
         <View style={s.brand}>
-          <View style={s.logoMark}>
-            <Ionicons name="restaurant-outline" size={30} color={C.brand} />
-          </View>
+          <Logo variant="symbol" size={68} />
           <Text style={s.logoTxt}>Foome</Text>
-          <Text style={s.tagline}>Comida boa, na hora certa.</Text>
+          <Text style={s.tagline}>A fome que fala.</Text>
 
           {usuario && (
             <View style={s.returnCard}>

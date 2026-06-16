@@ -17,6 +17,7 @@ import Reanimated, {
 import { Feather, Ionicons } from '../components/Icon';
 import { formatarPreco } from '../services/dados';
 import { obterRestaurante } from '../services/restaurantes';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { getNotaMediaRestaurante } from '../services/avaliacao';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
@@ -40,12 +41,10 @@ const SUBCATEGORIAS = [
 ];
 
 function classificarProduto(produto) {
-  if (['🍟', '🥟', '🥑', '🫓', '🍞', '🌭'].includes(produto.emoji)) return 'entradas';
-  if (['🥤', '🍲', '🍵', '🧃'].includes(produto.emoji)) return 'bebidas';
-  if (['🍮', '🍫', '🫐', '🍓', '🧁'].includes(produto.emoji)) return 'sobremesas';
-  if (['🍔', '🍕', '🌮', '🍝', '🥩', '🍖', '🍣', '🌯', '🥗', '🫕', '🍗', '🌶️', '🧀'].includes(produto.emoji)) {
-    return 'principais';
-  }
+  const t = `${produto.nome} ${produto.descricao || ''}`.toLowerCase();
+  if (/(suco|refrigerante|bebida|smoothie|vitamina|água|agua|cerveja|drink|shake|missoshiru)/.test(t)) return 'bebidas';
+  if (/(sobremesa|tiramisu|tigela|doce|brownie|pudim|sorvete|mousse|nutella|paçoca|pacoca)/.test(t)) return 'sobremesas';
+  if (/(batata|porção|porcao|entrada|bruschetta|nachos|gyoza|guacamole|fritas|linguiça|linguica)/.test(t)) return 'entradas';
   return 'principais';
 }
 
@@ -183,9 +182,7 @@ export default function RestauranteScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <RNAnimated.View style={[s.headerInfo, { opacity: headerOpacity }]}>
-          <RNAnimated.Text style={[s.headerEmoji, { fontSize: emojiSize }]}>
-            {restaurante.emoji}
-          </RNAnimated.Text>
+          <CategoriaIcone categoria={restaurante.categoria} size={32} color={C.white} />
           <RNAnimated.Text style={[s.headerNome, { fontSize: nomeSize }]}>
             {restaurante.nome}
           </RNAnimated.Text>

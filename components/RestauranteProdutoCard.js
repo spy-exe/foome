@@ -10,6 +10,7 @@ import Reanimated, {
 import { formatarPreco } from '../services/dados';
 import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import Stepper from './Stepper';
+import CategoriaIcone from './CategoriaIcone';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
@@ -69,7 +70,7 @@ const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
         onPress={onPress}
       >
         <Reanimated.View style={[s.prodImg, { backgroundColor: cor + '18' }, emojiStyle]}>
-          <Text style={s.prodEmoji}>{item.emoji}</Text>
+          <CategoriaIcone categoria={item.categoria} size={28} color={cor} />
         </Reanimated.View>
         <View style={s.prodInfo}>
           <Text style={s.prodNome}>{item.nome}</Text>

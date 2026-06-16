@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Compass, Zap, Bike } from 'lucide-react-native';
+import Logo from '../components/Logo';
 import { F, SHADOW } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
@@ -20,7 +22,7 @@ const { width, height } = Dimensions.get('window');
 const makeSlides = (C) => ([
   {
     id: '1',
-    emoji: '🍔',
+    Icone: Compass,
     titulo: 'Descubra restaurantes\nperto de você',
     subtitulo: 'Explore os melhores estabelecimentos da sua região com apenas alguns toques.',
     cor: C.brand,
@@ -28,7 +30,7 @@ const makeSlides = (C) => ([
   },
   {
     id: '2',
-    emoji: '⚡',
+    Icone: Zap,
     titulo: 'Peça com\num toque',
     subtitulo: 'Do cardápio ao pedido confirmado em segundos. Simples e rápido.',
     cor: C.amber,
@@ -36,7 +38,7 @@ const makeSlides = (C) => ([
   },
   {
     id: '3',
-    emoji: '🛵',
+    Icone: Bike,
     titulo: 'Acompanhe\nseu pedido',
     subtitulo: 'Acompanhe o status em tempo real e receba notificações a cada etapa.',
     cor: C.teal,
@@ -137,7 +139,9 @@ export default function OnboardingScreen({ onFinish }) {
     return (
       <View style={s.slide}>
         <View style={[s.emojiHalo, { backgroundColor: item.fundo }]}>
-          <Animated.Text style={[s.emoji, emojiStyle]}>{item.emoji}</Animated.Text>
+          <Animated.View style={emojiStyle}>
+            <item.Icone size={76} color={item.cor} strokeWidth={1.6} />
+          </Animated.View>
         </View>
         <Animated.View style={titleStyle}>
           <Text style={s.titulo}>{item.titulo}</Text>
@@ -150,6 +154,10 @@ export default function OnboardingScreen({ onFinish }) {
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
+
+      <View style={{ alignItems: 'center', paddingTop: 56, marginBottom: -4 }}>
+        <Logo variant="full" size={22} />
+      </View>
 
       {!ultimoSlide && (
         <TouchableOpacity style={s.skipBtn} onPress={finalizar} activeOpacity={0.75}>

@@ -11,6 +11,7 @@ import {
   Animated as RNAnimated,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import CategoriaIcone from './CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
@@ -122,7 +123,7 @@ export default function ProdutoDetalhesSheet({
   return (
     <BottomSheetSimples visible={visible} onClose={onClose} onDismiss={onDismiss}>
       <View style={s.sheetContent}>
-        <Text style={s.sheetEmoji}>{produto.emoji}</Text>
+        <CategoriaIcone categoria={produto.categoria} size={40} color={C.brand} />
         <Text style={s.sheetNome}>{produto.nome}</Text>
         <Text style={s.sheetDesc}>{produto.descricao}</Text>
 

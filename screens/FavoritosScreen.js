@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import { getFavoritos, removerFavorito } from '../services/storage';
 import { listarRestaurantes } from '../services/restaurantes';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, R, S, SHADOW } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
@@ -43,7 +44,7 @@ export default function FavoritosScreen({ navigation }) {
     return (
       <TouchableOpacity style={[s.card, { backgroundColor: C.surface }]} onPress={() => navigation.navigate('HomeTab', { screen: 'Restaurante', params: { restaurante: item } })} onLongPress={() => handleRemover(item)} activeOpacity={0.85}>
         <View style={[s.cardTopo, { backgroundColor: item.cor + '1A' }]}>
-          <Text style={s.cardEmoji}>{item.emoji}</Text>
+          <CategoriaIcone categoria={item.categoria} size={30} color={item.cor} />
           <View style={[s.ratingPill, { backgroundColor: C.warningLight }]}>
             <Ionicons name="star" size={11} color={C.warning} />
             <Text style={s.ratingTxt}> {item.avaliacao}</Text>

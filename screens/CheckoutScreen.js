@@ -19,6 +19,7 @@ import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 import { verificarBiometria } from '../services/biometria';
 import { criarPedido } from '../services/pedidos';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
 
@@ -262,7 +263,7 @@ function StepRevisao({ endereco, metodo, observacao, total, restaurante, itens, 
 
       <View style={s.revCard}>
         <View style={s.revHeader}>
-          <Text style={s.revEmoji}>{restaurante?.emoji || '🍽️'}</Text>
+          <CategoriaIcone categoria={restaurante?.categoria} size={28} color={restaurante?.cor || C.brand} />
           <View style={s.revHeaderInfo}>
             <Text style={s.revLabel}>Pedido em</Text>
             <Text style={s.revNome}>{restaurante?.nome}</Text>

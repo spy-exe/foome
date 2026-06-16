@@ -1,17 +1,6 @@
-// Mapeia o shape da API (snake_case, em inglês) para o shape que o app já usa.
-// Também devolve identidade visual (emoji/cor) por categoria, mantendo continuidade
-// enquanto a Fase 4 (marca) não redesenha os cards.
-
-export const CATEGORIA_EMOJI = {
-  'Hambúrgueres': '🍔',
-  'Pizzas': '🍕',
-  'Japonês': '🍣',
-  'Mexicano': '🌮',
-  'Saudável': '🥗',
-  'Massas': '🍝',
-  'Churrasco': '🥩',
-  'Açaí': '🫐',
-};
+// Mapeia o shape da API (snake_case, em inglês) para o shape que o app usa.
+// A identidade visual por categoria é só a COR (o ícone vem de CategoriaIcone,
+// por categoria — sem emojis).
 
 export const CATEGORIA_COR = {
   'Hambúrgueres': '#E8452C',
@@ -25,10 +14,7 @@ export const CATEGORIA_COR = {
 };
 
 function corDe(categoria) {
-  return CATEGORIA_COR[categoria] || '#E8452C';
-}
-function emojiDe(categoria) {
-  return CATEGORIA_EMOJI[categoria] || '🍽️';
+  return CATEGORIA_COR[categoria] || '#FF2E4D';
 }
 
 function formatarEntrega(fee) {
@@ -42,7 +28,7 @@ export function mapProduto(p, categoria) {
     nome: p.name,
     descricao: p.description || '',
     preco: Number(p.price),
-    emoji: emojiDe(categoria),
+    categoria,
     disponivel: p.is_available !== false,
   };
 }
@@ -61,7 +47,6 @@ export function mapRestaurante(r) {
     pedidoMinimo: Number(r.min_order) || 0,
     aberto: r.is_open !== false,
     cor: corDe(r.category),
-    emoji: emojiDe(r.category),
     lat: r.lat,
     lng: r.lng,
     produtos: (r.menu_items || []).map((p) => mapProduto(p, r.category)),
@@ -100,14 +85,12 @@ export function mapPedido(o) {
     restaurante: nome,
     restauranteNome: nome,
     restauranteCategoria: categoria,
-    restauranteEmoji: emojiDe(categoria),
     restauranteCor: corDe(categoria),
     // Objeto pronto para o carrinho (pedir de novo).
     restauranteRef: {
       id: String(o.restaurant_id),
       nome,
       categoria,
-      emoji: emojiDe(categoria),
       cor: corDe(categoria),
     },
     itens: (o.items || []).map((i) => ({
@@ -115,7 +98,7 @@ export function mapPedido(o) {
       nome: i.name,
       preco: Number(i.unit_price),
       qtd: i.quantity,
-      emoji: emojiDe(categoria),
+      categoria,
       observacao: i.notes || '',
     })),
     historico: (o.history || []).map((h) => ({

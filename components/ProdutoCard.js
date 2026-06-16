@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { formatarPreco } from '../services/dados';
 import { F, R, S, SHADOW } from '../constants/theme';
 import Stepper from './Stepper';
+import CategoriaIcone from './CategoriaIcone';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
 
@@ -19,7 +20,7 @@ export default function ProdutoCard({ produto, cor, quantidade, onPress, onAdici
         onPress={onPress}
       >
         <LinearGradient colors={gradCores} style={s.foto}>
-          <Text style={s.emoji}>{produto.emoji}</Text>
+          <CategoriaIcone categoria={produto.categoria || categoria} size={32} color="#FFFFFF" />
         </LinearGradient>
         <View style={s.info}>
           <Text style={s.nome} numberOfLines={1}>{produto.nome}</Text>

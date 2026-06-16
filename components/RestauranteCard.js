@@ -4,15 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Clock, ChefHat, Truck } from 'lucide-react-native';
 import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
+import CategoriaIcone from './CategoriaIcone';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
-
-const ICON_MAP = {
-  '🍔': ChefHat, '🍕': ChefHat, '🍣': ChefHat,
-  '🌮': ChefHat, '🥗': ChefHat, '🍝': ChefHat,
-  '🥩': ChefHat, '🫐': ChefHat,
-};
 
 const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) {
   const { C } = useTheme();
@@ -20,7 +15,6 @@ const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) 
   const gratis  = restaurante.entrega === 'Grátis';
   const popular = restaurante.avaliacao >= 4.8;
   const scale = useRef(new Animated.Value(1)).current;
-  const CatIcon = ICON_MAP[restaurante.emoji] || ChefHat;
 
   function pressIn() {
     Animated.timing(scale, {
@@ -57,7 +51,7 @@ const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) 
           style={s.topo}
         >
           <View style={[s.iconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-            <CatIcon size={36} color={C.white} />
+            <CategoriaIcone categoria={restaurante.categoria} size={34} color={C.white} />
           </View>
 
           {popular && (

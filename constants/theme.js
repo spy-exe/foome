@@ -22,10 +22,15 @@ export const F = {
 };
 
 export const C = {
-  // Brand
-  brand:        '#E8452C',
-  brandDark:    '#C73520',
-  brandLight:   '#FFF0ED',
+  // Brand — "Brasa" (crimson-coral faminto, com atitude; longe do laranja-clichê)
+  brand:        '#FF2E4D',
+  brandDark:    '#DB1C39',
+  brandLight:   '#FFE7EB',
+
+  // Accent — "Limão elétrico" (energia/destaque pontual; a virada que marca)
+  accent:       '#CDF564',
+  accentDark:   '#A9D63B',
+  accentLight:  '#F4FBDD',
 
   // Base neutra
   ink:          '#0A0A0A',
@@ -56,7 +61,7 @@ export const C = {
   infoLight:    '#EFF6FF',
 
   // ── Backward-compatible aliases ──
-  brandBorder:  '#FFF0ED',
+  brandBorder:  '#FFD7DE',
   ink2:         '#3D3D3D',
   ink3:         '#8A8A8A',
   ink4:         '#E8E8F0',

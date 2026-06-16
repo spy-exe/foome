@@ -8,6 +8,7 @@ import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { listarPedidos } from '../services/pedidos';
 import { normalizarErro } from '../services/api';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { getAvaliacaoPedido, salvarAvaliacao } from '../services/avaliacao';
 import { useApp } from '../contexts/AppContext';
@@ -105,7 +106,7 @@ function ModalAvaliacao({ visivel, pedido, onClose }) {
     >
       <View style={s.overlay}>
         <View style={s.modal}>
-          <Text style={s.modalEmoji}>{pedido?.restauranteEmoji ?? '🍽️'}</Text>
+          <CategoriaIcone categoria={pedido?.restauranteCategoria} size={40} color={pedido?.restauranteCor || C.brand} />
           <Text style={s.modalTitulo}>Como foi seu pedido?</Text>
           <Text style={s.modalSub}>{pedido?.restaurante}</Text>
 
@@ -290,7 +291,9 @@ export default function PedidosScreen({ navigation }) {
             <View style={s.cardBody}>
               <View style={s.cardTop}>
                 <View style={s.cardTitle}>
-                  <Text style={{ fontSize: 18, marginRight: 8 }}>{item.restauranteEmoji ?? '🍽️'}</Text>
+                  <View style={{ marginRight: 8 }}>
+                    <CategoriaIcone categoria={item.restauranteCategoria} size={18} color={item.restauranteCor || C.brand} />
+                  </View>
                   <Text style={s.restNome}>{item.restaurante}</Text>
                 </View>
                 <View style={[s.statusBadge, { backgroundColor: status.bg }]}>

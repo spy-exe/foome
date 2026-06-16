@@ -4,6 +4,7 @@ import {
   StatusBar, Platform, Animated,
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
+import CategoriaIcone from '../components/CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, SHADOW } from '../constants/theme';
@@ -86,7 +87,7 @@ export default function DetalhePedidoScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.restCard}>
-          <Text style={s.restEmoji}>{pedido.restauranteEmoji ?? '🍽️'}</Text>
+          <CategoriaIcone categoria={pedido.restauranteCategoria} size={34} color={pedido.restauranteCor || C.brand} />
           <Text style={s.restNome}>{pedido.restaurante}</Text>
           <Text style={s.restData}>{formatarDataCompleta(pedido.timestamp)}</Text>
         </View>
@@ -142,7 +143,7 @@ export default function DetalhePedidoScreen({ route, navigation }) {
         <Text style={s.sectionLabel}>Itens do pedido</Text>
         {pedido.itens.map(item => (
           <View key={item.id} style={s.itemCard}>
-            <Text style={s.itemEmoji}>{item.emoji}</Text>
+            <CategoriaIcone categoria={item.categoria} size={24} color={pedido.restauranteCor || C.brand} />
             <View style={s.itemInfo}>
               <Text style={s.itemNome}>{item.nome}</Text>
               <Text style={s.itemQtd}>{item.qtd}× {formatarPreco(item.preco)}</Text>
