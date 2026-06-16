@@ -1,0 +1,57 @@
+# Cadastro + login. Use --env para credenciais (ver docs/MAESTRO.md).
+appId: com.foome.app
+env:
+  EMAIL: "maestro@foome.app"
+  SENHA: "senha123"
+  NOME: "Maestro Tester"
+---
+- launchApp:
+    clearState: true
+
+# Onboarding (primeira execução): pula para o login.
+- runFlow:
+    when:
+      visible: "Pular"
+    commands:
+      - tapOn: "Pular"
+
+# --- Cadastro ---
+- tapOn:
+    id: "link-cadastro"
+- tapOn:
+    id: "input-nome"
+- inputText: ${NOME}
+- tapOn:
+    id: "input-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "input-senha"
+- inputText: ${SENHA}
+- hideKeyboard
+- tapOn:
+    id: "btn-cadastrar"
+
+# Após cadastrar, o app entra autenticado (tab Início visível).
+- assertVisible:
+    id: "tab-inicio"
+
+# --- Logout e login de novo ---
+- tapOn:
+    id: "tab-perfil"
+- tapOn:
+    id: "btn-logout"
+- tapOn: "Sair"
+
+- assertVisible:
+    id: "input-email"
+- tapOn:
+    id: "input-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "input-senha"
+- inputText: ${SENHA}
+- hideKeyboard
+- tapOn:
+    id: "btn-entrar"
+- assertVisible:
+    id: "tab-inicio"

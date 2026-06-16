@@ -362,6 +362,7 @@ export default function PerfilScreen({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="btn-logout"
           style={[s.logoutBtn, { backgroundColor: C.surface, borderColor: C.brandBorder }]}
           onPress={handleLogout}
           activeOpacity={0.85}

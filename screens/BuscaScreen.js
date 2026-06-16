@@ -234,6 +234,7 @@ export default function BuscaScreen({ navigation }) {
           <View style={s.searchInputWrap}>
             <Feather name="search" size={16} color={C.inkLight} />
             <TextInput
+              testID="input-busca"
               ref={inputRef}
               style={s.searchInput}
               placeholder="Buscar restaurante ou prato..."

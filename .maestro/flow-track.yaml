@@ -1,0 +1,45 @@
+# Rastreamento: acompanhar um pedido e confirmar a entrega com o código.
+# Pré-requisito: já existe pelo menos um pedido na conta (rode flow-order antes,
+# ou crie um pedido manualmente). O código de entrega é exibido na própria tela.
+appId: com.foome.app
+env:
+  EMAIL: "maestro@foome.app"
+  SENHA: "senha123"
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: "input-email"
+    commands:
+      - tapOn:
+          id: "input-email"
+      - inputText: ${EMAIL}
+      - tapOn:
+          id: "input-senha"
+      - inputText: ${SENHA}
+      - hideKeyboard
+      - tapOn:
+          id: "btn-entrar"
+
+# Ir para Pedidos e abrir o acompanhamento
+- tapOn:
+    id: "tab-pedidos"
+- assertVisible: "Meus Pedidos"
+- tapOn: "Acompanhar"
+
+# O pedido avança até "a caminho" e mostra o campo de código.
+- extendedWaitUntil:
+    visible:
+      id: "input-delivery-code"
+    timeout: 60000
+
+# O código de 4 dígitos é exibido em destaque acima do campo.
+# Em automação real, leia-o do estado/QA build. Aqui assumimos via env DELIVERY_CODE.
+- tapOn:
+    id: "input-delivery-code"
+- inputText: ${DELIVERY_CODE}
+- hideKeyboard
+- tapOn:
+    id: "btn-confirm-delivery"
+- assertVisible: "Pedido entregue!"

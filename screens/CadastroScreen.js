@@ -212,12 +212,7 @@ export default function CadastroScreen({ navigation }) {
       haptic.error();
       return;
     }
-    if (!fotoUri) {
-      setFotoErro('Adicione uma foto de perfil');
-      haptic.error();
-      Alert.alert('Foto obrigatória', 'Tire uma foto de perfil para continuar.');
-      return;
-    }
+    // Foto de perfil é opcional (pode ser adicionada depois no Perfil).
 
     setSalvando(true);
     try {
@@ -383,6 +378,7 @@ export default function CadastroScreen({ navigation }) {
       {/* Nome */}
       <Text style={s.label}>NOME COMPLETO</Text>
       <InputField
+        testID="input-nome"
         icon={<Feather name="user" size={16} color={C.ink3} />}
         placeholder="João Silva"
         value={nome}
@@ -394,6 +390,7 @@ export default function CadastroScreen({ navigation }) {
       {/* Email */}
       <Text style={[s.label, { marginTop: 14 }]}>E-MAIL</Text>
       <InputField
+        testID="input-email"
         icon={<Feather name="mail" size={16} color={C.ink3} />}
         placeholder="joao@email.com"
         keyboardType="email-address"
@@ -421,6 +418,7 @@ export default function CadastroScreen({ navigation }) {
             <Feather name={verSenha ? 'eye-off' : 'eye'} size={16} color={C.ink3} />
           </TouchableOpacity>
         }
+        testID="input-senha"
         placeholder="Mínimo 6 caracteres"
         secureTextEntry={!verSenha}
         textContentType="newPassword"
@@ -431,6 +429,7 @@ export default function CadastroScreen({ navigation }) {
       />
 
         <PrimaryButton
+          testID="btn-cadastrar"
           label="Criar conta"
           onPress={finalizar}
           loading={salvando}

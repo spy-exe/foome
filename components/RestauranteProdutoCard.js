@@ -62,6 +62,7 @@ const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
   return (
     <View style={s.card}>
       <TouchableOpacity
+        testID={`card-produto-${item.id}`}
         style={s.cardPressArea}
         activeOpacity={0.86}
         accessibilityRole="button"

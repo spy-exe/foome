@@ -47,6 +47,7 @@ export default function TabNavigator() {
         component={HomeStack}
         options={{
           tabBarLabel: 'Início',
+          tabBarButtonTestID: 'tab-inicio',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon icon={Home} color={color} focused={focused} />
           ),
@@ -57,6 +58,7 @@ export default function TabNavigator() {
         component={MapaScreen}
         options={{
           tabBarLabel: 'Mapa',
+          tabBarButtonTestID: 'tab-mapa',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon icon={Compass} color={color} focused={focused} />
           ),
@@ -67,6 +69,7 @@ export default function TabNavigator() {
         component={PedidosScreen}
         options={{
           tabBarLabel: 'Pedidos',
+          tabBarButtonTestID: 'tab-pedidos',
           tabBarIcon: ({ color, focused }) => (
             <PedidosTabIcon color={color} focused={focused} />
           ),
@@ -77,6 +80,7 @@ export default function TabNavigator() {
         component={PerfilStack}
         options={{
           tabBarLabel: 'Perfil',
+          tabBarButtonTestID: 'tab-perfil',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon icon={User} color={color} focused={focused} />
           ),

@@ -1,0 +1,39 @@
+# Perfil: abrir configurações, trocar tema e (opcional) excluir conta.
+appId: com.foome.app
+env:
+  EMAIL: "maestro@foome.app"
+  SENHA: "senha123"
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: "input-email"
+    commands:
+      - tapOn:
+          id: "input-email"
+      - inputText: ${EMAIL}
+      - tapOn:
+          id: "input-senha"
+      - inputText: ${SENHA}
+      - hideKeyboard
+      - tapOn:
+          id: "btn-entrar"
+
+- tapOn:
+    id: "tab-perfil"
+- tapOn: "Configurações"
+- assertVisible: "APARÊNCIA"
+
+# Trocar o tema (claro/escuro)
+- tapOn:
+    id: "switch-tema"
+- tapOn:
+    id: "switch-tema"
+
+# Excluir conta (descomente para validar o fluxo destrutivo)
+# - tapOn:
+#     id: "btn-excluir-conta"
+# - tapOn: "Excluir"
+# - assertVisible:
+#     id: "input-email"

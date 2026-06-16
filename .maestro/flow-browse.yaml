@@ -1,0 +1,44 @@
+# Navegar: listar restaurantes, buscar, filtrar por categoria, abrir uma loja.
+appId: com.foome.app
+env:
+  EMAIL: "maestro@foome.app"
+  SENHA: "senha123"
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: "input-email"
+    commands:
+      - tapOn:
+          id: "input-email"
+      - inputText: ${EMAIL}
+      - tapOn:
+          id: "input-senha"
+      - inputText: ${SENHA}
+      - hideKeyboard
+      - tapOn:
+          id: "btn-entrar"
+
+- assertVisible:
+    id: "tab-inicio"
+
+# Lista de restaurantes carregada (vinda da API)
+- assertVisible: "Burger Supreme"
+
+# Filtrar por categoria na Home
+- tapOn: "Pizzas"
+- assertVisible: "Pizza Napoli"
+- tapOn: "Pizzas"   # desmarca
+
+# Abrir um restaurante pelo card (testID dinâmico)
+- tapOn:
+    id: "card-restaurant-1"
+- assertVisible: "Classic Smash"   # item do menu vindo da API
+- back
+
+# Mapa
+- tapOn:
+    id: "tab-mapa"
+- assertVisible:
+    id: "tab-inicio"

@@ -7,7 +7,7 @@ import { useThemedStyles } from '../utils/useThemedStyles';
 
 export default function PrimaryButton({
   label, onPress, color, variant = 'brand',
-  disabled, loading, style, leftIcon,
+  disabled, loading, style, leftIcon, testID,
 }) {
   const { C } = useTheme();
   const s = useThemedStyles(makeStyles);
@@ -34,6 +34,7 @@ export default function PrimaryButton({
       ]}
       onPress={handlePress}
       disabled={disabled || loading}
+      testID={testID}
       activeOpacity={0.85}
     >
       {loading ? (

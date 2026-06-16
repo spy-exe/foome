@@ -238,6 +238,7 @@ export default function RestauranteScreen({ route, navigation }) {
       {totalItens > 0 && (
         <View style={[s.cta, { backgroundColor: restaurante.cor }]}>
           <TouchableOpacity
+            testID="btn-ver-carrinho"
             style={s.ctaPress}
             accessibilityRole="button"
             accessibilityLabel={`Ver carrinho, ${totalItens} itens, total ${formatarPreco(totalPreco)}`}

@@ -460,6 +460,7 @@ export default function CarrinhoScreen({ navigation }) {
           </View>
 
           <TouchableOpacity
+            testID="btn-finalizar"
             style={[s.btn, { backgroundColor: restauranteAtual.cor }, confirmando && s.btnOff]}
             onPress={confirmarPedido}
             disabled={confirmando || itens.length === 0}

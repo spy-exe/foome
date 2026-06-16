@@ -1,0 +1,44 @@
+# Pedido: abrir loja, adicionar ao carrinho, finalizar.
+# Obs.: a finalização pede biometria — ver docs/MAESTRO.md (emulador com biometria
+# cadastrada). Este flow vai até a tela de confirmação biométrica.
+appId: com.foome.app
+env:
+  EMAIL: "maestro@foome.app"
+  SENHA: "senha123"
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: "input-email"
+    commands:
+      - tapOn:
+          id: "input-email"
+      - inputText: ${EMAIL}
+      - tapOn:
+          id: "input-senha"
+      - inputText: ${SENHA}
+      - hideKeyboard
+      - tapOn:
+          id: "btn-entrar"
+
+- assertVisible:
+    id: "tab-inicio"
+
+# Abrir restaurante e adicionar um item
+- tapOn:
+    id: "card-restaurant-1"
+- tapOn:
+    id: "card-produto-1"
+- tapOn:
+    id: "btn-add-cart"
+
+# Ir ao carrinho e finalizar
+- tapOn:
+    id: "btn-ver-carrinho"
+- assertVisible: "Carrinho"
+- tapOn:
+    id: "btn-finalizar"
+
+# A confirmação biométrica aparece aqui (Face ID / digital).
+# Em emulador com biometria, aprovar a digital conclui o pedido.

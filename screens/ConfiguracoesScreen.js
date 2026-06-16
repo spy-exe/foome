@@ -79,7 +79,7 @@ export default function ConfiguracoesScreen({ navigation }) {
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.prefRow}>
             <View style={s.prefLeft}><View style={s.prefIcon}><Moon size={18} color={C.midnight} /></View><Text style={s.prefLabel}>Modo escuro</Text></View>
-            <Switch value={isDark} onValueChange={toggle} trackColor={{ false: C.border, true: C.brandLight }} thumbColor={isDark ? C.brand : C.inkLight} />
+            <Switch testID="switch-tema" value={isDark} onValueChange={toggle} trackColor={{ false: C.border, true: C.brandLight }} thumbColor={isDark ? C.brand : C.inkLight} />
           </View>
           <View style={s.divider} />
           <View style={s.prefRow}>
@@ -100,7 +100,7 @@ export default function ConfiguracoesScreen({ navigation }) {
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.prefRow}>
             <View style={s.prefLeft}><View style={s.prefIcon}><Fingerprint size={18} color={C.midnight} /></View><Text style={s.prefLabel}>Login por biometria</Text></View>
-            <Switch value={bioAtiva} onValueChange={handleToggleBio} disabled={!bioDisponivel} trackColor={{ false: C.border, true: C.brandLight }} thumbColor={bioAtiva ? C.brand : C.inkLight} />
+            <Switch testID="switch-biometria" value={bioAtiva} onValueChange={handleToggleBio} disabled={!bioDisponivel} trackColor={{ false: C.border, true: C.brandLight }} thumbColor={bioAtiva ? C.brand : C.inkLight} />
           </View>
           {!bioDisponivel && (
             <Text style={{ fontFamily: F.body, fontSize: 12, color: C.inkLight, paddingHorizontal: S.lg, paddingBottom: S.md }}>
@@ -121,7 +121,7 @@ export default function ConfiguracoesScreen({ navigation }) {
             <ChevronRight size={18} color={C.inkLight} />
           </TouchableOpacity>
           <View style={s.divider} />
-          <TouchableOpacity style={s.navRow} onPress={handleExcluirConta} activeOpacity={0.75}>
+          <TouchableOpacity testID="btn-excluir-conta" style={s.navRow} onPress={handleExcluirConta} activeOpacity={0.75}>
             <View style={s.prefLeft}><View style={[s.prefIcon, { backgroundColor: C.errorLight }]}><Trash2 size={18} color={C.error} /></View><Text style={[s.prefLabel, { color: C.error }]}>Excluir conta</Text></View>
             <ChevronRight size={18} color={C.error} />
           </TouchableOpacity>

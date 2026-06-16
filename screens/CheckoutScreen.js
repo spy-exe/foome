@@ -653,12 +653,12 @@ export default function CheckoutScreen({ navigation }) {
           </TouchableOpacity>
         )}
         {etapa < 2 ? (
-          <TouchableOpacity style={[s.footerBtn, !podeAvancar && s.footerBtnOff]} onPress={avancarEtapa} disabled={!podeAvancar} activeOpacity={0.85}>
+          <TouchableOpacity testID="btn-continuar" style={[s.footerBtn, !podeAvancar && s.footerBtnOff]} onPress={avancarEtapa} disabled={!podeAvancar} activeOpacity={0.85}>
             <Text style={s.footerBtnTxt}>Continuar</Text>
             <Feather name="chevron-right" size={20} color="#fff" />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={[s.footerBtn, s.footerBtnConfirm, confirmando && s.footerBtnOff]} onPress={confirmarPedido} disabled={confirmando} activeOpacity={0.85}>
+          <TouchableOpacity testID="btn-confirmar" style={[s.footerBtn, s.footerBtnConfirm, confirmando && s.footerBtnOff]} onPress={confirmarPedido} disabled={confirmando} activeOpacity={0.85}>
             <Feather name="shield" size={18} color="#fff" />
             <Text style={s.footerBtnTxt}>{confirmando ? 'Enviando pedido...' : 'Confirmar pedido'}</Text>
           </TouchableOpacity>

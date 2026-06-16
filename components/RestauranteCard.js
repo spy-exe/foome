@@ -35,6 +35,7 @@ const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) 
   return (
     <Animated.View style={[s.card, { transform: [{ scale }] }]}>
       <TouchableOpacity
+        testID={`card-restaurant-${restaurante.id}`}
         activeOpacity={1}
         onPressIn={pressIn}
         onPressOut={pressOut}

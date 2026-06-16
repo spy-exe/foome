@@ -265,6 +265,7 @@ export default function LoginScreen({ navigation }) {
           {/* Email */}
           <Text style={s.label}>E-MAIL</Text>
           <InputField
+            testID="input-email"
             icon={<Feather name="mail" size={16} color={C.ink3} />}
             placeholder="seu@email.com"
             keyboardType="email-address"
@@ -293,6 +294,7 @@ export default function LoginScreen({ navigation }) {
                 <Feather name={verSenha ? 'eye-off' : 'eye'} size={16} color={C.ink3} />
               </TouchableOpacity>
             }
+            testID="input-senha"
             placeholder="••••••••"
             secureTextEntry={!verSenha}
             textContentType="password"
@@ -310,6 +312,7 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
 
           <PrimaryButton
+            testID="btn-entrar"
             label="Entrar"
             onPress={loginComSenha}
             loading={loginLoading}
@@ -319,6 +322,7 @@ export default function LoginScreen({ navigation }) {
           <View style={s.linkRow}>
             <Text style={s.linkTxt}>Não tem conta?  </Text>
             <TouchableOpacity
+              testID="link-cadastro"
               onPress={() => {
                 haptic.select();
                 navigation.navigate('Cadastro');

@@ -318,6 +318,7 @@ export default function RastreamentoScreen({ route, navigation }) {
           <Text style={s.codigoSub}>Mostre ao entregador ou confirme ao receber seu pedido.</Text>
           <Text style={s.codigoValor}>{codigoEntrega}</Text>
           <TextInput
+            testID="input-delivery-code"
             style={s.codigoInput}
             value={codigoInput}
             onChangeText={t => setCodigoInput(t.replace(/[^0-9]/g, '').slice(0, 4))}
@@ -327,6 +328,7 @@ export default function RastreamentoScreen({ route, navigation }) {
             maxLength={4}
           />
           <TouchableOpacity
+            testID="btn-confirm-delivery"
             style={[s.codigoBtn, (codigoInput.length !== 4 || confirmando) && { opacity: 0.5 }]}
             onPress={confirmarEntregaComCodigo}
             disabled={codigoInput.length !== 4 || confirmando}

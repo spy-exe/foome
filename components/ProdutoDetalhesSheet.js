@@ -158,6 +158,7 @@ export default function ProdutoDetalhesSheet({
         />
 
         <PrimaryButton
+          testID="btn-add-cart"
           label={`Adicionar · ${formatarPreco(produto.preco)}`}
           color={cor}
           onPress={onAdicionar}
