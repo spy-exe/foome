@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Heart } from 'lucide-react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import { getFavoritos, removerFavorito } from '../services/storage';
-import { RESTAURANTES } from '../services/dados';
+import { listarRestaurantes } from '../services/restaurantes';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, R, S, SHADOW } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,7 +20,16 @@ export default function FavoritosScreen({ navigation }) {
 
   async function carregar() {
     const ids = await getFavoritos();
-    setRestaurantes(RESTAURANTES.filter(r => ids.includes(r.id)));
+    if (!ids.length) {
+      setRestaurantes([]);
+      return;
+    }
+    try {
+      const todos = await listarRestaurantes();
+      setRestaurantes(todos.filter(r => ids.includes(r.id)));
+    } catch {
+      setRestaurantes([]);
+    }
   }
 
   async function handleRemover(r) {

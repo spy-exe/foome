@@ -7,7 +7,8 @@ import {
 const { width } = Dimensions.get('window');
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '../components/Icon';
-import { RESTAURANTES, formatarPreco } from '../services/dados';
+import { formatarPreco } from '../services/dados';
+import { useRestaurantes } from '../hooks/useRestaurantes';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, TYPE, S, R, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
@@ -68,6 +69,7 @@ export default function BuscaScreen({ navigation }) {
   const s = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { setRestaurante } = useCarrinho();
+  const { restaurantes } = useRestaurantes();
   const inputRef = useRef(null);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -116,7 +118,7 @@ export default function BuscaScreen({ navigation }) {
 
   /* ── Resultados filtrados ── */
   const resultados = useMemo(() => {
-    let lista = RESTAURANTES;
+    let lista = restaurantes;
 
     // Busca textual
     if (debounced) {
@@ -183,7 +185,7 @@ export default function BuscaScreen({ navigation }) {
     }
 
     return lista;
-  }, [debounced, filtroCategorias, filtroTempo, filtroAvaliacao, filtroGratis, filtroOrdenar]);
+  }, [restaurantes, debounced, filtroCategorias, filtroTempo, filtroAvaliacao, filtroGratis, filtroOrdenar]);
 
   const temQuery = debounced.length > 0;
   const filtrosAtivos = filtroCategorias.length

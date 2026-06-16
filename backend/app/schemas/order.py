@@ -23,6 +23,7 @@ class OrderItemOut(BaseModel):
 
     id: int
     menu_item_id: int
+    name: str | None = None
     quantity: int
     unit_price: float
     notes: str | None = None
@@ -41,6 +42,8 @@ class OrderOut(BaseModel):
     id: int
     user_id: int
     restaurant_id: int
+    restaurant_name: str | None = None
+    restaurant_category: str | None = None
     status: OrderStatus
     subtotal: float
     delivery_fee: float

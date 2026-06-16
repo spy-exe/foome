@@ -13,9 +13,10 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
-import { RESTAURANTES, formatarPreco } from '../services/dados';
-import { getPedidos } from '../services/storage';
+import { formatarPreco } from '../services/dados';
+import { listarPedidos } from '../services/pedidos';
 import { getItensFavoritos, getUltimoPedido } from '../services/recomendacao';
+import { useRestaurantes } from '../hooks/useRestaurantes';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
@@ -184,18 +185,18 @@ function CategoriaChip({ cat, ativa, onPress }) {
   );
 }
 
-function restaurantesMaisPedidos(pedidos) {
+function restaurantesMaisPedidos(pedidos, restaurantes) {
   const contagem = {};
 
   for (const pedido of pedidos) {
-    const nome = pedido.restauranteNome || pedido.restaurante;
-    if (!nome) continue;
-    contagem[nome] = (contagem[nome] || 0) + 1;
+    const id = pedido.restauranteId;
+    if (!id) continue;
+    contagem[id] = (contagem[id] || 0) + 1;
   }
 
   return Object.entries(contagem)
     .sort((a, b) => b[1] - a[1])
-    .map(([nome]) => RESTAURANTES.find(r => r.nome === nome))
+    .map(([id]) => restaurantes.find(r => r.id === id))
     .filter(Boolean)
     .slice(0, 3);
 }
@@ -206,14 +207,18 @@ export default function HomeScreen({ navigation }) {
   const BANNERS = makeBanners(C);
   const { usuario } = useApp();
   const { adicionar, limpar, setRestaurante } = useCarrinho();
+  const { restaurantes, loading, erro, recarregar } = useRestaurantes();
   const [busca, setBusca]     = useState('');
   const [termoDebounced, setTermoDebounced] = useState('');
   const [catAtiva, setCatAtiva] = useState(null);
   const [favoritos, setFavoritos] = useState([]);
-  const [maisPedidos, setMaisPedidos] = useState([]);
+  const [pedidosRaw, setPedidosRaw] = useState([]);
   const [ultimoPedido, setUltimoPedido] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const maisPedidos = useMemo(
+    () => restaurantesMaisPedidos(pedidosRaw, restaurantes),
+    [pedidosRaw, restaurantes],
+  );
   const [bannerIdx, setBannerIdx] = useState(0);
   const fabPulse = useRef(new Animated.Value(1)).current;
   const fabPress = useRef(new Animated.Value(1)).current;
@@ -222,11 +227,6 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => () => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -254,35 +254,41 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(timer);
   }, [busca]);
 
-  const onRefresh = useCallback(() => {
+  const carregarHistorico = useCallback(async () => {
+    const [favoritosDoUsuario, ultimo, pedidos] = await Promise.all([
+      getItensFavoritos(),
+      getUltimoPedido(),
+      listarPedidos().catch(() => []),
+    ]);
+    return { favoritosDoUsuario, ultimo, pedidos };
+  }, []);
+
+  const onRefresh = useCallback(async () => {
     haptic.medium();
     setRefreshing(true);
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    refreshTimer.current = setTimeout(() => setRefreshing(false), 1200);
-  }, []);
+    try {
+      const [{ favoritosDoUsuario, ultimo, pedidos }] = await Promise.all([
+        carregarHistorico(),
+        recarregar(),
+      ]);
+      setFavoritos(favoritosDoUsuario);
+      setUltimoPedido(ultimo);
+      setPedidosRaw(pedidos);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [carregarHistorico, recarregar]);
 
   useFocusEffect(useCallback(() => {
     let ativo = true;
-
-    async function carregarHistorico() {
-      const [favoritosDoUsuario, ultimo, pedidos] = await Promise.all([
-        getItensFavoritos(),
-        getUltimoPedido(),
-        getPedidos(),
-      ]);
-
-      if (ativo) {
-        setFavoritos(favoritosDoUsuario);
-        setUltimoPedido(ultimo);
-        setMaisPedidos(restaurantesMaisPedidos(pedidos));
-      }
-    }
-
-    carregarHistorico();
-    return () => {
-      ativo = false;
-    };
-  }, []));
+    carregarHistorico().then(({ favoritosDoUsuario, ultimo, pedidos }) => {
+      if (!ativo) return;
+      setFavoritos(favoritosDoUsuario);
+      setUltimoPedido(ultimo);
+      setPedidosRaw(pedidos);
+    });
+    return () => { ativo = false; };
+  }, [carregarHistorico]));
 
   useEffect(() => {
     if (!ultimoPedido || busca) return undefined;
@@ -315,21 +321,13 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    const rest = RESTAURANTES.find(r => r.nome === ultimoPedido.restaurante);
-    if (!rest) {
-      haptic.error();
-      Alert.alert('Restaurante indisponível', 'Não encontramos o restaurante desse pedido.');
-      return;
-    }
-
     haptic.heavy();
     limpar();
-    setRestaurante(rest);
+    setRestaurante(ultimoPedido.restauranteRef);
 
     for (const item of ultimoPedido.itens ?? []) {
-      const produto = rest.produtos.find(p => p.id === item.id) ?? item;
       for (let i = 0; i < (item.qtd ?? 1); i += 1) {
-        adicionar(produto);
+        adicionar(item);
       }
     }
 
@@ -339,13 +337,13 @@ export default function HomeScreen({ navigation }) {
   const hasBusca = busca.trim().length > 0;
   const termoBusca = termoDebounced || busca.trim();
   const lista = useMemo(() => (
-    RESTAURANTES.filter(r => {
+    restaurantes.filter(r => {
       if (catAtiva && r.categoria !== catAtiva) return false;
       if (!termoDebounced) return true;
       const q = termoDebounced.toLowerCase();
       return r.nome.toLowerCase().includes(q) || r.categoria.toLowerCase().includes(q);
     })
-  ), [catAtiva, termoDebounced]);
+  ), [restaurantes, catAtiva, termoDebounced]);
 
   return (
     <View style={s.root}>
@@ -432,6 +430,15 @@ export default function HomeScreen({ navigation }) {
 
         {loading ? (
           <HomeSkeleton />
+        ) : erro ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 80, paddingHorizontal: 32, gap: 10 }}>
+            <Feather name="alert-circle" size={44} color={C.error} />
+            <Text style={{ fontFamily: F.heading, fontSize: 17, color: C.ink, marginTop: 6 }}>Não foi possível carregar</Text>
+            <Text style={{ fontFamily: F.body, fontSize: 14, color: C.inkLight, textAlign: 'center' }}>{erro}</Text>
+            <TouchableOpacity onPress={recarregar} activeOpacity={0.85} style={{ marginTop: 12, backgroundColor: C.brand, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 }}>
+              <Text style={{ fontFamily: F.uiBold, color: '#fff', fontSize: 14 }}>Tentar de novo</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
 
@@ -507,7 +514,7 @@ export default function HomeScreen({ navigation }) {
               contentContainerStyle={s.favRow}
             >
               {favoritos.map(item => {
-                const rest = RESTAURANTES.find(r => r.produtos.some(p => p.id === item.id));
+                const rest = restaurantes.find(r => r.id === item.restauranteId);
                 if (!rest) return null;
 
                 return (

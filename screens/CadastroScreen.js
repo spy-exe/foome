@@ -231,6 +231,11 @@ export default function CadastroScreen({ navigation }) {
             'E-mail já cadastrado',
             'Este e-mail já está em uso. Faça login ou use outro e-mail.'
           );
+        } else {
+          Alert.alert(
+            'Não foi possível criar a conta',
+            resultado.mensagem || 'Tente novamente em instantes.'
+          );
         }
         return;
       }

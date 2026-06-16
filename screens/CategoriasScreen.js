@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  FlatList, Platform,
+  FlatList, Platform, ActivityIndicator,
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
-import { RESTAURANTES } from '../services/dados';
+import { listarRestaurantes } from '../services/restaurantes';
+import { normalizarErro } from '../services/api';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, TYPE, S, R, SHADOW } from '../constants/theme';
 import RestauranteCard from '../components/RestauranteCard';
@@ -37,10 +38,21 @@ export default function CategoriasScreen({ route, navigation }) {
   const { categoria, label } = route.params || {};
   const { setRestaurante } = useCarrinho();
 
-  const restaurantes = useMemo(() => {
+  const [restaurantes, setRestaurantes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    let ativo = true;
     const cat = CAT_MAP[categoria];
-    if (!cat) return [];
-    return RESTAURANTES.filter(r => r.categoria === cat);
+    if (!cat) { setRestaurantes([]); setLoading(false); return undefined; }
+    setLoading(true);
+    setErro(null);
+    listarRestaurantes({ categoria: cat })
+      .then(data => { if (ativo) setRestaurantes(data); })
+      .catch(e => { if (ativo) setErro(normalizarErro(e).mensagem); })
+      .finally(() => { if (ativo) setLoading(false); });
+    return () => { ativo = false; };
   }, [categoria]);
 
   const iconName = CATEGORIA_ICONES[categoria] || 'grid';
@@ -65,7 +77,17 @@ export default function CategoriasScreen({ route, navigation }) {
       </View>
 
       {/* ── Lista ── */}
-      {restaurantes.length === 0 ? (
+      {loading ? (
+        <View style={s.emptyState}>
+          <ActivityIndicator size="large" color={C.brand} />
+        </View>
+      ) : erro ? (
+        <View style={s.emptyState}>
+          <Feather name="alert-circle" size={48} color={C.error} />
+          <Text style={s.emptyTitle}>Não foi possível carregar</Text>
+          <Text style={s.emptySub}>{erro}</Text>
+        </View>
+      ) : restaurantes.length === 0 ? (
         <View style={s.emptyState}>
           <Feather name="search" size={48} color={C.ink4} />
           <Text style={s.emptyTitle}>Nenhum restaurante</Text>

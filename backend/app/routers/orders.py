@@ -30,7 +30,11 @@ def _load_order(order_id: int, user: User, db: Session) -> Order:
     order = db.scalar(
         select(Order)
         .where(Order.id == order_id)
-        .options(selectinload(Order.items), selectinload(Order.history))
+        .options(
+            selectinload(Order.items).selectinload(OrderItem.menu_item),
+            selectinload(Order.history),
+            selectinload(Order.restaurant),
+        )
     )
     if not order or order.user_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido não encontrado")
@@ -116,7 +120,11 @@ def list_orders(current: User = Depends(get_current_user), db: Session = Depends
     return db.scalars(
         select(Order)
         .where(Order.user_id == current.id)
-        .options(selectinload(Order.items), selectinload(Order.history))
+        .options(
+            selectinload(Order.items).selectinload(OrderItem.menu_item),
+            selectinload(Order.history),
+            selectinload(Order.restaurant),
+        )
         .order_by(Order.created_at.desc())
     ).all()
 

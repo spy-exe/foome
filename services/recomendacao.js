@@ -1,22 +1,31 @@
-import { getPedidos } from './storage';
+import { listarPedidos } from './pedidos';
 
 /**
- * Retorna os 3 itens mais pedidos pelo usuário,
- * ordenados por frequência (quantidade total pedida).
+ * Retorna os 3 itens mais pedidos pelo usuário (por quantidade total),
+ * já com o restaurante de origem para permitir "pedir de novo".
  */
 export async function getItensFavoritos() {
-  const pedidos = await getPedidos();
+  let pedidos = [];
+  try {
+    pedidos = await listarPedidos();
+  } catch {
+    return [];
+  }
   if (!pedidos.length) return [];
 
   const contagem = {};
   for (const pedido of pedidos) {
     for (const item of pedido.itens ?? []) {
       if (!item.id) continue;
-
       if (!contagem[item.id]) {
-        contagem[item.id] = { ...item, qtdTotal: 0, vezesPedido: 0 };
+        contagem[item.id] = {
+          ...item,
+          qtdTotal: 0,
+          vezesPedido: 0,
+          restauranteId: pedido.restauranteId,
+          restauranteNome: pedido.restauranteNome,
+        };
       }
-
       contagem[item.id].qtdTotal += item.qtd ?? 1;
       contagem[item.id].vezesPedido += 1;
     }
@@ -27,14 +36,12 @@ export async function getItensFavoritos() {
     .slice(0, 3);
 }
 
-/**
- * Retorna o último pedido feito pelo usuário.
- */
+/** Retorna o último pedido feito pelo usuário (a API já devolve do mais novo ao mais antigo). */
 export async function getUltimoPedido() {
-  const pedidos = await getPedidos();
-  if (!pedidos.length) return null;
-
-  return [...pedidos].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-  )[0];
+  try {
+    const pedidos = await listarPedidos();
+    return pedidos[0] ?? null;
+  } catch {
+    return null;
+  }
 }

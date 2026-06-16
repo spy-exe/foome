@@ -14,7 +14,7 @@ import Animated, {
   Easing,
   SlideInDown,
 } from 'react-native-reanimated';
-import { atualizarStatusPedido } from '../services/storage';
+import { avancarStatus } from '../services/pedidos';
 import { getAvaliacaoPedido } from '../services/avaliacao';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, SHADOW } from '../constants/theme';
@@ -170,7 +170,8 @@ export default function RastreamentoScreen({ route, navigation }) {
     setStatus(novoStatus);
     setTimestamps(prev => ({ ...prev, [novoStatus]: agora }));
     haptic.medium();
-    atualizarStatusPedido(pedido.id, novoStatus);
+    // Nudge best-effort no servidor (Fase 5 reconstrói com delivery_code/timeline).
+    avancarStatus(pedido.id).catch(() => {});
   }
 
   useEffect(() => {

@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
-import { getPedidos, salvarPedidos } from '../services/storage';
+import { listarPedidos } from '../services/pedidos';
+import { normalizarErro } from '../services/api';
 import { formatarPreco } from '../services/dados';
 import { getAvaliacaoPedido, salvarAvaliacao } from '../services/avaliacao';
 import { useApp } from '../contexts/AppContext';
@@ -162,6 +163,7 @@ export default function PedidosScreen({ navigation }) {
   const { atualizarPedidosCount } = useApp();
   const [pedidos, setPedidos] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
   const [tabAtiva, setTabAtiva] = useState('andamento');
   const [showAvaliacao, setShowAvaliacao] = useState(false);
   const [pedidoParaAvaliar, setPedidoParaAvaliar] = useState(null);
@@ -191,11 +193,15 @@ export default function PedidosScreen({ navigation }) {
   useFocusEffect(useCallback(() => {
     let ativo = true;
     setCarregando(true);
-    getPedidos()
+    setErro(null);
+    listarPedidos()
       .then(lista => {
         if (!ativo) return;
         setPedidos(lista);
         atualizarPedidosCount(lista);
+      })
+      .catch(e => {
+        if (ativo) setErro(normalizarErro(e).mensagem);
       })
       .finally(() => {
         if (ativo) setCarregando(false);
@@ -206,32 +212,16 @@ export default function PedidosScreen({ navigation }) {
     };
   }, [atualizarPedidosCount]));
 
+  // Reflete o status real do servidor (que avança pelo rastreamento).
   useEffect(() => {
     const interval = setInterval(() => {
-      setPedidos(prev => {
-        let mudou = false;
-        const entregues = [];
-        const novos = prev.map(pedido => {
-          const statusAtual = pedido.status ?? 'confirmado';
-          const novoStatus = PROXIMO_STATUS[statusAtual];
-          if (!novoStatus) return pedido;
-
-          mudou = true;
-          const atualizado = { ...pedido, status: novoStatus };
-          if (novoStatus === 'entregue') entregues.push(atualizado);
-          return atualizado;
-        });
-
-        if (!mudou) return prev;
-
-        salvarPedidos(novos);
-        entregues.forEach(agendarAvaliacao);
-        return novos;
-      });
+      listarPedidos()
+        .then(lista => setPedidos(lista))
+        .catch(() => {});
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [agendarAvaliacao]);
+  }, []);
 
   useEffect(() => () => {
     timeoutsAvaliacao.current.forEach(clearTimeout);
@@ -355,6 +345,12 @@ export default function PedidosScreen({ navigation }) {
         ListEmptyComponent={
           carregando ? (
             <PedidosSkeletonList />
+          ) : erro ? (
+            <View style={s.vazio}>
+              <Feather name="alert-circle" size={40} color={C.error} />
+              <Text style={s.vazioTitulo}>Não foi possível carregar</Text>
+              <Text style={s.vazioSub}>{erro}</Text>
+            </View>
           ) : (
           <View style={s.vazio}>
             <View style={s.vazioIlustracao}>

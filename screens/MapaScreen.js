@@ -6,7 +6,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '../components/Icon';
 import * as Location from 'expo-location';
-import { RESTAURANTES } from '../services/dados';
+import { useRestaurantes } from '../hooks/useRestaurantes';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
@@ -63,9 +63,10 @@ export default function MapaScreen({ navigation }) {
   const [showFiltro, setShowFiltro] = useState(false);
   const slideY = useRef(new Animated.Value(CARD_H + 60)).current;
   const mapRef = useRef(null);
+  const { restaurantes } = useRestaurantes();
   const markersFiltrados = filtroCat
-    ? RESTAURANTES.filter(r => r.categoria === filtroCat)
-    : RESTAURANTES;
+    ? restaurantes.filter(r => r.categoria === filtroCat)
+    : restaurantes;
   const regiaoInicial = userLoc || VASSOURAS;
 
   useEffect(() => {

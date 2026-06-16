@@ -16,6 +16,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '../components/Icon';
 import { formatarPreco } from '../services/dados';
+import { obterRestaurante } from '../services/restaurantes';
 import { getNotaMediaRestaurante } from '../services/avaliacao';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
@@ -54,6 +55,8 @@ export default function RestauranteScreen({ route, navigation }) {
   const restaurante = route?.params?.restaurante;
   const { adicionar, remover, totalItens, totalPreco, itens, setRestaurante } = useCarrinho();
   const [notaMedia, setNotaMedia] = useState(null);
+  const [produtos, setProdutos] = useState(restaurante?.produtos ?? []);
+  const [menuLoading, setMenuLoading] = useState(true);
   const [subCat, setSubCat] = useState('todas');
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -81,6 +84,18 @@ export default function RestauranteScreen({ route, navigation }) {
     };
   }, [restaurante?.nome]);
 
+  // O menu não vem na listagem — busca o restaurante completo pela API.
+  useEffect(() => {
+    let ativo = true;
+    if (!restaurante?.id) return undefined;
+    setMenuLoading(true);
+    obterRestaurante(restaurante.id)
+      .then(full => { if (ativo) setProdutos(full.produtos || []); })
+      .catch(() => {})
+      .finally(() => { if (ativo) setMenuLoading(false); });
+    return () => { ativo = false; };
+  }, [restaurante?.id]);
+
   useEffect(() => {
     if (totalItens > 0) {
       badgeScale.value = withSequence(
@@ -92,10 +107,9 @@ export default function RestauranteScreen({ route, navigation }) {
 
   const qtd = id => itens.find(item => item.id === id)?.qtd ?? 0;
   const produtosFiltrados = useMemo(() => {
-    const produtos = restaurante?.produtos ?? [];
     if (subCat === 'todas') return produtos;
     return produtos.filter(produto => classificarProduto(produto) === subCat);
-  }, [restaurante?.produtos, subCat]);
+  }, [produtos, subCat]);
 
   const headerHeight = scrollY.interpolate({
     inputRange: [0, SCROLL_OFFSET],

@@ -56,6 +56,14 @@ class Order(Base):
         back_populates="order", cascade="all, delete-orphan", order_by="OrderStatusHistory.timestamp"
     )
 
+    @property
+    def restaurant_name(self) -> str | None:
+        return self.restaurant.name if self.restaurant else None
+
+    @property
+    def restaurant_category(self) -> str | None:
+        return self.restaurant.category if self.restaurant else None
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -69,6 +77,10 @@ class OrderItem(Base):
 
     order: Mapped["Order"] = relationship(back_populates="items")
     menu_item: Mapped["MenuItem"] = relationship()
+
+    @property
+    def name(self) -> str | None:
+        return self.menu_item.name if self.menu_item else None
 
 
 class OrderStatusHistory(Base):

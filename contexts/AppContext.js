@@ -5,8 +5,8 @@ import React, {
   useEffect,
   useReducer,
 } from 'react';
-import { getPedidos, salvarUsuario } from '../services/storage';
-import { logout as authLogout, validarSessao } from '../services/auth';
+import { listarPedidos } from '../services/pedidos';
+import { logout as authLogout, validarSessao, atualizarPerfil } from '../services/auth';
 
 const AppContext = createContext(null);
 
@@ -49,10 +49,12 @@ export function AppProvider({ children }) {
         usuario = null;
       }
 
-      try {
-        pedidos = await getPedidos();
-      } catch {
-        pedidos = [];
+      if (usuario) {
+        try {
+          pedidos = await listarPedidos();
+        } catch {
+          pedidos = [];
+        }
       }
 
       if (!ativo) return;
@@ -67,26 +69,43 @@ export function AppProvider({ children }) {
     };
   }, []);
 
-  const login = (usuario) => dispatch({ type: 'LOGIN', payload: usuario });
+  const login = useCallback(async (usuario) => {
+    dispatch({ type: 'LOGIN', payload: usuario });
+    try {
+      const pedidos = await listarPedidos();
+      dispatch({ type: 'SET_PEDIDOS_COUNT', payload: pedidos.length });
+    } catch {
+      // sem rede: mantém contagem atual
+    }
+  }, []);
 
   const atualizarPedidosCount = useCallback(async (pedidosCarregados) => {
-    const pedidos = Array.isArray(pedidosCarregados)
-      ? pedidosCarregados
-      : await getPedidos();
+    let pedidos = pedidosCarregados;
+    if (!Array.isArray(pedidos)) {
+      try {
+        pedidos = await listarPedidos();
+      } catch {
+        pedidos = [];
+      }
+    }
     dispatch({ type: 'SET_PEDIDOS_COUNT', payload: pedidos.length });
     return pedidos.length;
   }, []);
 
-  const atualizarUsuario = async (usuarioAtualizado) => {
-    await salvarUsuario(usuarioAtualizado);
-    dispatch({ type: 'ATUALIZAR_USUARIO', payload: usuarioAtualizado });
-    return usuarioAtualizado;
-  };
+  const atualizarUsuario = useCallback(async (usuarioAtualizado) => {
+    const atualizado = await atualizarPerfil({
+      nome: usuarioAtualizado.nome,
+      telefone: usuarioAtualizado.telefone,
+      fotoUri: usuarioAtualizado.fotoUri,
+    });
+    dispatch({ type: 'ATUALIZAR_USUARIO', payload: atualizado });
+    return atualizado;
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authLogout();
     dispatch({ type: 'LOGOUT' });
-  };
+  }, []);
 
   return (
     <AppContext.Provider

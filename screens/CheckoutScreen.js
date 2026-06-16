@@ -18,7 +18,7 @@ import { useApp } from '../contexts/AppContext';
 import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 import { verificarBiometria } from '../services/biometria';
-import { salvarPedidos, getPedidos } from '../services/storage';
+import { criarPedido } from '../services/pedidos';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
 
@@ -557,35 +557,25 @@ export default function CheckoutScreen({ navigation }) {
 
       haptic.success();
 
-      const pedido = {
-        id: Date.now().toString(),
-        numero: `#F${String(Date.now()).slice(-6)}`,
-        restaurante: restaurante?.nome || '',
-        restauranteCor: restaurante?.cor || C.brand,
-        restauranteEmoji: restaurante?.emoji || '🍽️',
-        restauranteTempo: restaurante?.tempo || '',
-        itens: itens.map(i => ({ ...i })),
-        subtotal: totalPreco,
-        taxaEntrega,
-        total,
-        endereco: enderecoSel,
-        observacao,
-        pagamento: metodoSel?.label || 'PIX',
-        timestamp: new Date().toISOString(),
-        status: 'confirmado',
-      };
+      const enderecoTexto = typeof enderecoSel === 'string'
+        ? enderecoSel
+        : (enderecoSel?.endereco || enderecoSel?.label || '');
 
-      const anteriores = await getPedidos();
-      const novos = [pedido, ...anteriores];
-      await salvarPedidos(novos);
-      await atualizarPedidosCount(novos);
+      const pedido = await criarPedido({
+        restauranteId: restaurante.id,
+        itens,
+        endereco: enderecoTexto || null,
+        pagamento: metodoSel?.label || 'PIX',
+      });
+
+      await atualizarPedidosCount();
       limpar();
 
       navigation.replace('Confirmacao', { pedido });
     } catch (err) {
       haptic.error();
       setConfirmando(false);
-      Alert.alert('Erro', 'Não foi possível confirmar. Tente novamente.');
+      Alert.alert('Erro', err?.mensagem || 'Não foi possível confirmar. Tente novamente.');
     }
   }
 

@@ -177,17 +177,16 @@ export default function LoginScreen({ navigation }) {
 
       if (!resultado.sucesso) {
         haptic.error();
-        if (resultado.erro === 'email_nao_encontrado') {
-          setErros(prev => ({ ...prev, email: 'E-mail não encontrado' }));
+        if (resultado.erro === 'credenciais') {
+          setErros(prev => ({ ...prev, email: ' ', senha: 'E-mail ou senha incorretos' }));
           Alert.alert(
-            'E-mail não encontrado',
-            'Este e-mail não está cadastrado. Verifique ou crie uma conta.'
+            'Não foi possível entrar',
+            'E-mail ou senha incorretos. Verifique seus dados ou crie uma conta.'
           );
-        } else if (resultado.erro === 'senha_incorreta') {
-          setErros(prev => ({ ...prev, senha: 'Senha incorreta' }));
+        } else {
           Alert.alert(
-            'Senha incorreta',
-            'A senha informada não confere. Tente novamente.'
+            'Não foi possível entrar',
+            resultado.mensagem || 'Tente novamente em instantes.'
           );
         }
         return;

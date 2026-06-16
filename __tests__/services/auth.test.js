@@ -1,125 +1,95 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
-import { hashSenha, autenticar, cadastrar, logout } from '../../services/auth';
+import { cadastrar, autenticar, logout, atualizarPerfil } from '../../services/auth';
+import { api, setTokens, clearTokens } from '../../services/api';
+
+jest.mock('../../services/api', () => {
+  const real = jest.requireActual('../../services/api');
+  return {
+    __esModule: true,
+    api: { get: jest.fn(), post: jest.fn(), patch: jest.fn() },
+    setTokens: jest.fn(() => Promise.resolve()),
+    clearTokens: jest.fn(() => Promise.resolve()),
+    getToken: jest.fn(() => Promise.resolve(null)),
+    normalizarErro: real.normalizarErro,
+  };
+});
+
+const USER_API = {
+  id: 1, name: 'Joao', email: 'joao@teste.com', phone: null,
+  created_at: '2026-01-01T00:00:00Z',
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
-  AsyncStorage.getItem.mockReset();
-  AsyncStorage.setItem.mockReset();
-  AsyncStorage.removeItem.mockReset();
 });
 
-describe('auth', () => {
-  describe('hashSenha', () => {
-    it('gera hash SHA-256 da senha', async () => {
-      const hash = await hashSenha('minha-senha');
-
-      expect(hash).toBe('hash-minha-senha');
-      expect(Crypto.digestStringAsync).toHaveBeenCalledWith(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        'minha-senha',
-      );
-    });
-  });
-
+describe('auth (API)', () => {
   describe('cadastrar', () => {
-    it('cadastra novo usuário com senha hasheada', async () => {
-      AsyncStorage.getItem.mockResolvedValue(null);
+    it('registra, guarda tokens e retorna o usuário', async () => {
+      api.post.mockResolvedValueOnce({ data: { access_token: 'a', refresh_token: 'r' } });
+      api.get.mockResolvedValueOnce({ data: USER_API });
 
-      const result = await cadastrar({
-        nome: 'Joao',
-        email: 'JOAO@teste.com',
-        senha: '123456',
-        fotoUri: null,
-      });
+      const result = await cadastrar({ nome: 'Joao', email: 'JOAO@teste.com', senha: '123456' });
 
+      expect(api.post).toHaveBeenCalledWith('/auth/register', expect.objectContaining({
+        name: 'Joao', email: 'joao@teste.com', password: '123456',
+      }));
+      expect(setTokens).toHaveBeenCalledWith({ access_token: 'a', refresh_token: 'r' });
       expect(result.sucesso).toBe(true);
-      expect(result.erro).toBeNull();
-      expect(result.usuario).toEqual(
-        expect.objectContaining({
-          nome: 'Joao',
-          email: 'joao@teste.com',
-          senhaHash: 'hash-123456',
-          fotoUri: null,
-        }),
-      );
-      expect(result.usuario.senhaHash).not.toBe('123456');
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        '@foome_usuario',
-        expect.stringContaining('"senhaHash":"hash-123456"'),
-      );
+      expect(result.usuario).toEqual(expect.objectContaining({ nome: 'Joao', email: 'joao@teste.com' }));
     });
 
-    it('rejeita email duplicado', async () => {
-      const existente = { nome: 'Joao', email: 'joao@teste.com', senhaHash: 'abc' };
-      AsyncStorage.getItem.mockResolvedValue(JSON.stringify(existente));
+    it('mapeia 409 para email_duplicado', async () => {
+      api.post.mockRejectedValueOnce({ response: { status: 409, data: { detail: 'E-mail já cadastrado' } } });
 
-      const result = await cadastrar({
-        nome: 'Joao 2',
-        email: 'JOAO@teste.com',
-        senha: '654321',
-        fotoUri: null,
-      });
+      const result = await cadastrar({ nome: 'Joao', email: 'joao@teste.com', senha: '123456' });
 
-      expect(result).toEqual({ sucesso: false, erro: 'email_duplicado' });
-      expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+      expect(result.sucesso).toBe(false);
+      expect(result.erro).toBe('email_duplicado');
+      expect(setTokens).not.toHaveBeenCalled();
     });
   });
 
   describe('autenticar', () => {
-    it('autentica com credenciais corretas', async () => {
-      const usuario = { nome: 'Joao', email: 'joao@teste.com', senhaHash: 'hash-123456' };
-      AsyncStorage.getItem.mockResolvedValue(JSON.stringify(usuario));
+    it('loga via form, guarda tokens e retorna o usuário', async () => {
+      api.post.mockResolvedValueOnce({ data: { access_token: 'a', refresh_token: 'r' } });
+      api.get.mockResolvedValueOnce({ data: USER_API });
 
       const result = await autenticar('JOAO@teste.com', '123456');
 
-      expect(result).toEqual({ sucesso: true, erro: null, usuario });
+      const [url, body, config] = api.post.mock.calls[0];
+      expect(url).toBe('/auth/login');
+      expect(body).toContain('username=joao%40teste.com');
+      expect(config.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+      expect(result.sucesso).toBe(true);
+      expect(result.usuario.email).toBe('joao@teste.com');
     });
 
-    it('retorna erro para email não cadastrado', async () => {
-      AsyncStorage.getItem.mockResolvedValue(null);
+    it('mapeia 401 para credenciais', async () => {
+      api.post.mockRejectedValueOnce({ response: { status: 401, data: { detail: 'inválidos' } } });
 
-      const result = await autenticar('inexistente@teste.com', '123456');
+      const result = await autenticar('joao@teste.com', 'errada');
 
-      expect(result).toEqual({
-        sucesso: false,
-        erro: 'email_nao_encontrado',
-        usuario: null,
-      });
+      expect(result.sucesso).toBe(false);
+      expect(result.erro).toBe('credenciais');
+      expect(result.usuario).toBeNull();
     });
+  });
 
-    it('retorna erro para email diferente do cadastrado', async () => {
-      const usuario = { nome: 'Joao', email: 'joao@teste.com', senhaHash: 'hash-123456' };
-      AsyncStorage.getItem.mockResolvedValue(JSON.stringify(usuario));
+  describe('atualizarPerfil', () => {
+    it('faz PATCH /users/me e retorna usuário mapeado', async () => {
+      api.patch.mockResolvedValueOnce({ data: { ...USER_API, name: 'Joao Silva' } });
 
-      const result = await autenticar('outro@teste.com', '123456');
+      const result = await atualizarPerfil({ nome: 'Joao Silva', telefone: '24999' });
 
-      expect(result).toEqual({
-        sucesso: false,
-        erro: 'email_nao_encontrado',
-        usuario: null,
-      });
-    });
-
-    it('retorna erro para senha incorreta', async () => {
-      const usuario = { nome: 'Joao', email: 'joao@teste.com', senhaHash: 'hash-123456' };
-      AsyncStorage.getItem.mockResolvedValue(JSON.stringify(usuario));
-
-      const result = await autenticar('joao@teste.com', 'wrong');
-
-      expect(result).toEqual({
-        sucesso: false,
-        erro: 'senha_incorreta',
-        usuario: null,
-      });
+      expect(api.patch).toHaveBeenCalledWith('/users/me', { name: 'Joao Silva', phone: '24999' });
+      expect(result.nome).toBe('Joao Silva');
     });
   });
 
   describe('logout', () => {
-    it('remove usuário do AsyncStorage', async () => {
+    it('limpa os tokens', async () => {
       await logout();
-
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('@foome_usuario');
+      expect(clearTokens).toHaveBeenCalled();
     });
   });
 });

@@ -17,7 +17,7 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 import { verificarBiometria } from '../services/biometria';
-import { salvarPedidos, getPedidos } from '../services/storage';
+import { criarPedido } from '../services/pedidos';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
@@ -244,26 +244,13 @@ export default function CarrinhoScreen({ navigation }) {
 
       const endereco = ENDERECOS_MOCK.find(end => end.id === enderecoSel);
       const pagamento = PAGAMENTOS.find(pag => pag.id === pagamentoSel);
-      const pedido = {
-        id: Date.now().toString(),
-        restaurante: restauranteAtual.nome,
-        restauranteCor: restauranteAtual.cor,
-        restauranteEmoji: restauranteAtual.emoji,
-        itens: itens.map(item => ({ ...item })),
-        subtotal,
-        taxaEntrega,
-        desconto,
-        total,
-        enderecoEntrega: endereco,
+      await criarPedido({
+        restauranteId: restauranteAtual.id,
+        itens,
+        endereco: endereco ? `${endereco.label} · ${endereco.endereco}` : null,
         pagamento: pagamento?.label ?? 'PIX',
-        timestamp: new Date().toISOString(),
-        status: 'confirmado',
-      };
-
-      const anteriores = await getPedidos();
-      const pedidosAtualizados = [pedido, ...anteriores];
-      await salvarPedidos(pedidosAtualizados);
-      await atualizarPedidosCount(pedidosAtualizados);
+      });
+      await atualizarPedidosCount();
       hapticSuccess();
 
       setShowBioOverlay(false);
@@ -286,7 +273,7 @@ export default function CarrinhoScreen({ navigation }) {
       await sleep(700);
       setShowBioOverlay(false);
       setBioStatus('idle');
-      Alert.alert('Erro', 'Não foi possível confirmar o pedido. Tente novamente.');
+      Alert.alert('Erro', err?.mensagem || 'Não foi possível confirmar o pedido. Tente novamente.');
     } finally {
       setConfirmando(false);
     }

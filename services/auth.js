@@ -1,75 +1,97 @@
-import * as Crypto from 'expo-crypto';
-import { salvarUsuario, getUsuario, removerUsuario } from './storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api, setTokens, clearTokens, getToken, normalizarErro } from './api';
 
-export async function hashSenha(senha) {
-  return await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    senha
-  );
-}
+// A foto de perfil é tirada localmente (câmera) e o backend não a armazena,
+// então fica no AsyncStorage e é reanexada ao usuário.
+const FOTO_KEY = '@foome_foto';
 
-async function migrarSenhaLegada(usuario) {
-  if (!usuario || usuario.senhaHash || !usuario.senha) return usuario;
-
-  const migrado = {
-    ...usuario,
-    senhaHash: await hashSenha(usuario.senha),
+function mapUsuario(u, fotoUri) {
+  return {
+    id: u.id,
+    nome: u.name,
+    email: u.email,
+    telefone: u.phone || '',
+    criadoEm: u.created_at,
+    fotoUri: fotoUri ?? null,
   };
-  delete migrado.senha;
-
-  await salvarUsuario(migrado);
-  return migrado;
 }
 
-export async function validarSessao() {
-  const usuario = await getUsuario();
-  return await migrarSenhaLegada(usuario);
+async function getFoto() {
+  return AsyncStorage.getItem(FOTO_KEY);
+}
+
+export async function me() {
+  const { data } = await api.get('/auth/me');
+  return mapUsuario(data, await getFoto());
+}
+
+export async function cadastrar({ nome, email, senha, telefone, fotoUri }) {
+  try {
+    const { data } = await api.post('/auth/register', {
+      name: nome.trim(),
+      email: email.trim().toLowerCase(),
+      password: senha,
+      phone: telefone || null,
+    });
+    await setTokens(data);
+    if (fotoUri) await AsyncStorage.setItem(FOTO_KEY, fotoUri);
+    return { sucesso: true, erro: null, usuario: await me() };
+  } catch (e) {
+    const err = normalizarErro(e);
+    return {
+      sucesso: false,
+      erro: err.status === 409 ? 'email_duplicado' : 'erro',
+      mensagem: err.mensagem,
+      usuario: null,
+    };
+  }
 }
 
 export async function autenticar(email, senha) {
-  const usuarioSalvo = await getUsuario();
-
-  if (!usuarioSalvo) {
-    return { sucesso: false, erro: 'email_nao_encontrado', usuario: null };
+  try {
+    // /auth/login espera form (OAuth2PasswordRequestForm), username = e-mail
+    const form = new URLSearchParams();
+    form.append('username', email.trim().toLowerCase());
+    form.append('password', senha);
+    const { data } = await api.post('/auth/login', form.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    await setTokens(data);
+    return { sucesso: true, erro: null, usuario: await me() };
+  } catch (e) {
+    const err = normalizarErro(e);
+    return {
+      sucesso: false,
+      erro: err.status === 401 ? 'credenciais' : 'erro',
+      mensagem: err.mensagem,
+      usuario: null,
+    };
   }
-
-  const emailNormalizado = email.trim().toLowerCase();
-  const emailSalvo = usuarioSalvo.email?.trim().toLowerCase();
-
-  if (emailNormalizado !== emailSalvo) {
-    return { sucesso: false, erro: 'email_nao_encontrado', usuario: null };
-  }
-
-  const usuario = await migrarSenhaLegada(usuarioSalvo);
-  const hash = await hashSenha(senha);
-
-  if (hash !== usuario.senhaHash) {
-    return { sucesso: false, erro: 'senha_incorreta', usuario: null };
-  }
-
-  return { sucesso: true, erro: null, usuario };
 }
 
-export async function cadastrar({ nome, email, senha, fotoUri }) {
-  const emailNormalizado = email.trim().toLowerCase();
-  const existente = await getUsuario();
-
-  if (existente?.email?.trim().toLowerCase() === emailNormalizado) {
-    return { sucesso: false, erro: 'email_duplicado' };
+export async function atualizarPerfil({ nome, telefone, fotoUri }) {
+  const body = {};
+  if (nome !== undefined) body.name = nome;
+  if (telefone !== undefined) body.phone = telefone;
+  const { data } = await api.patch('/users/me', body);
+  if (fotoUri !== undefined) {
+    if (fotoUri) await AsyncStorage.setItem(FOTO_KEY, fotoUri);
+    else await AsyncStorage.removeItem(FOTO_KEY);
   }
+  return mapUsuario(data, await getFoto());
+}
 
-  const usuario = {
-    nome: nome.trim(),
-    email: emailNormalizado,
-    senhaHash: await hashSenha(senha),
-    fotoUri: fotoUri || null,
-    criadoEm: new Date().toISOString(),
-  };
-
-  await salvarUsuario(usuario);
-  return { sucesso: true, erro: null, usuario };
+export async function validarSessao() {
+  const token = await getToken();
+  if (!token) return null;
+  try {
+    return await me();
+  } catch {
+    return null;
+  }
 }
 
 export async function logout() {
-  await removerUsuario();
+  await clearTokens();
+  await AsyncStorage.removeItem(FOTO_KEY);
 }
