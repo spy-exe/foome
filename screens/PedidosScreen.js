@@ -158,7 +158,7 @@ function ModalAvaliacao({ visivel, pedido, onClose }) {
 }
 
 export default function PedidosScreen({ navigation }) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const s = useThemedStyles(makeStyles);
   const STATUS_CONFIG = makeStatusConfig(C);
   const { atualizarPedidosCount } = useApp();
@@ -256,7 +256,7 @@ export default function PedidosScreen({ navigation }) {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={C.surface} />
 
       <View style={s.header}>
         <Text style={s.titulo}>Meus Pedidos</Text>
@@ -295,9 +295,15 @@ export default function PedidosScreen({ navigation }) {
       </View>
 
       <FlatList
+        style={s.listaWrap}
         data={carregando ? [] : pedidosFiltrados}
         keyExtractor={i => i.id}
-        contentContainerStyle={s.lista}
+        contentContainerStyle={[
+          s.lista,
+          (carregando || erro || pedidosFiltrados.length === 0) && s.listaVazia,
+        ]}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} colors={[C.brand]} />
         }
@@ -454,7 +460,9 @@ const makeStyles = (C) => StyleSheet.create({
   },
   tabCountTxt: { fontFamily: F.bold, fontSize: 11, color: '#fff' },
 
-  lista: { padding: 16, paddingBottom: 40 },
+  listaWrap: { flex: 1 },
+  lista: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 116 : 96 },
+  listaVazia: { flexGrow: 1 },
 
   skeletonCard: {
     flexDirection: 'row',

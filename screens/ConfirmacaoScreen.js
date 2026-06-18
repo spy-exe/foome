@@ -68,7 +68,7 @@ export default function ConfirmacaoScreen({ navigation, route }) {
   const pedido = route?.params?.pedido;
   const [mostrarConfetti, setMostrarConfetti] = useState(false);
 
-  const restauranteTempo = pedido?.restauranteTempo || '30–40 min';
+  const restauranteTempo = pedido?.restauranteTempo || '30-40 min';
   const numeroPedido = pedido?.numero || `#F${String(Date.now()).slice(-6)}`;
 
   /* Animações sequenciadas */

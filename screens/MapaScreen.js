@@ -41,45 +41,53 @@ const CORES_CATEGORIA = {
   'Açaí':         '#6D28D9',
 };
 
-/**
- * Mantém `tracksViewChanges` ligado só nos primeiros instantes após montar e
- * depois desliga. Isso conserta o bug dos pins cortados no Android: o marker é
- * rasterizado em bitmap e, com o tracking ligado o tempo todo, a captura podia
- * acontecer antes do ícone terminar o layout (pin "pela metade"). Ligado no
- * início garante a captura correta; desligado depois evita flicker/custo.
- */
-function useStopTracking(delay = 800) {
+function useMarkerTracking(layoutReady, delay = 450) {
   const [tracks, setTracks] = useState(true);
   useEffect(() => {
+    if (!layoutReady) {
+      setTracks(true);
+      return undefined;
+    }
+
     const t = setTimeout(() => setTracks(false), delay);
     return () => clearTimeout(t);
-  }, [delay]);
+  }, [delay, layoutReady]);
   return tracks;
 }
 
 function RestauranteMarker({ rest, onPress }) {
-  const tracks = useStopTracking();
+  const [wrapReady, setWrapReady] = useState(false);
+  const [iconReady, setIconReady] = useState(false);
+  const tracks = useMarkerTracking(wrapReady && iconReady);
   const cor = CORES_CATEGORIA[rest.categoria] ?? '#E8452C';
   return (
     <Marker
       coordinate={{ latitude: rest.lat, longitude: rest.lng }}
       onPress={onPress}
       tracksViewChanges={tracks}
-      anchor={{ x: 0.5, y: 0.76 }}
-      centerOffset={{ x: 0, y: -2 }}
+      anchor={{ x: 0.5, y: 0.5 }}
+      centerOffset={{ x: 0, y: 0 }}
     >
-      <View style={markerStyles.wrap}>
-        <View style={[markerStyles.pinHead, { backgroundColor: cor }]}>
-          <CategoriaIcone categoria={rest.categoria} size={18} color="#FFFFFF" />
+      <View
+        collapsable={false}
+        pointerEvents="box-none"
+        style={markerStyles.wrap}
+        onLayout={() => setWrapReady(true)}
+      >
+        <View collapsable={false} style={[markerStyles.marker, { borderColor: cor }]}>
+          <View collapsable={false} style={[markerStyles.markerInner, { backgroundColor: cor }]}>
+            <View collapsable={false} onLayout={() => setIconReady(true)}>
+              <CategoriaIcone categoria={rest.categoria} size={16} color="#FFFFFF" />
+            </View>
+          </View>
         </View>
-        <View style={[markerStyles.pinTail, { backgroundColor: cor }]} />
       </View>
     </Marker>
   );
 }
 
 function UserMarker({ coordinate }) {
-  const tracks = useStopTracking();
+  const tracks = useMarkerTracking(true);
   return (
     <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracks}>
       <View style={markerStyles.userWrap}>
@@ -351,43 +359,35 @@ export default function MapaScreen({ navigation }) {
 
 const markerStyles = StyleSheet.create({
   wrap: {
-    width: 72,
-    height: 84,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 8,
-    overflow: 'visible',
-  },
-  pinHead: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 64,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
+    padding: 8,
+    overflow: 'visible',
+  },
+  marker: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
     elevation: 7,
     shadowColor: '#000',
-    shadowOpacity: 0.26,
-    shadowRadius: 7,
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
+    overflow: 'visible',
   },
-  pinTail: {
-    width: 22,
-    height: 22,
-    marginTop: -13,
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: '#FFFFFF',
-    borderBottomRightRadius: 5,
-    transform: [{ rotate: '45deg' }],
-    zIndex: 1,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+  markerInner: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   userWrap: {
     width: 30,
