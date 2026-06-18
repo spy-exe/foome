@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  StatusBar, Platform, TextInput, Alert,
+  StatusBar, Platform, TextInput, Alert, ScrollView,
 } from 'react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import MapView, { Marker } from 'react-native-maps';
@@ -220,124 +220,131 @@ export default function RastreamentoScreen({ route, navigation }) {
         </View>
       </View>
 
-      <View style={s.mapaWrap}>
-        <MapView
-          style={s.mapa}
-          initialRegion={{
-            latitude: restLat,
-            longitude: restLng,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          rotateEnabled={false}
-          pitchEnabled={false}
-        >
-          <Marker coordinate={{ latitude: restLat, longitude: restLng }} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={s.markerRest}>
-              <Feather name="map-pin" size={18} color="#fff" />
-            </View>
-          </Marker>
-          <Marker coordinate={{ latitude: restLat + 0.003, longitude: restLng + 0.002 }} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={s.markerUser}>
-              <Feather name="navigation" size={16} color="#fff" />
-            </View>
-          </Marker>
-        </MapView>
-        <View style={s.mapaBottomCurve} />
-      </View>
-
-      <View style={[s.statusCard, { backgroundColor: statusBg }]}>
-        <Animated.View style={[s.statusIconWrap, { backgroundColor: statusCfg.cor }, pulseAnim]}>
-          <Feather name={statusCfg.icon} size={24} color="#fff" />
-        </Animated.View>
-        <Text style={[s.statusLabel, { color: statusCfg.cor }]}>{statusCfg.label}</Text>
-        <Text style={s.statusSub}>{STATUS_SUBTEXTO[status]}</Text>
-      </View>
-
-      {status !== 'entregue' && (
-        <>
-          <Text style={s.tempoRestante}>15-25 min</Text>
-          <Text style={s.tempoLabel}>tempo estimado</Text>
-        </>
-      )}
-
-      <View style={s.timelineWrap}>
-        {STATUS_ORDEM.map((etapaKey, idx) => {
-          const concluido = idx < idxAtual;
-          const ativo = idx === idxAtual;
-          const pendente = idx > idxAtual;
-          const cfg = STATUS_DISPLAY[etapaKey];
-          const ts = timestamps[etapaKey];
-
-          return (
-            <View key={etapaKey}>
-              <View style={s.etapaRow}>
-                <View style={s.etapaColLeft}>
-                  <EtapaIcon concluido={concluido} ativo={ativo} icon={cfg.icon} />
-                </View>
-                <View style={s.etapaInfo}>
-                  <Text style={[s.etapaLabel, { color: pendente ? C.ink3 : C.ink }]}>
-                    {cfg.label}
-                  </Text>
-                  {ts ? (
-                    <Text style={s.etapaTs}>{'\u00E0s'} {ts}</Text>
-                  ) : pendente ? (
-                    <Text style={s.etapaTs}>—</Text>
-                  ) : null}
-                </View>
-              </View>
-              {idx < STATUS_ORDEM.length - 1 && (
-                <EtapaLinha concluida={concluido} />
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      {entregadorVisivel && (
-        <Animated.View style={s.entregadorCard} entering={SlideInDown.duration(400).springify().damping(14)}>
-          <View style={s.entregadorAvatar}>
-            <Text style={s.entregadorIniciais}>CS</Text>
-          </View>
-          <View style={s.entregadorInfo}>
-            <Text style={s.entregadorNome}>Carlos Silva</Text>
-            <Text style={s.entregadorTag}>Entregador parceiro</Text>
-          </View>
-          <View style={s.entregadorRating}>
-            <Feather name="star" size={14} color={C.amber} />
-            <Text style={s.entregadorNota}>4.9</Text>
-          </View>
-        </Animated.View>
-      )}
-
-      {status === 'a_caminho' && (
-        <Animated.View style={s.codigoCard} entering={SlideInDown.duration(400).springify().damping(14)}>
-          <Text style={s.codigoTitulo}>Código de entrega</Text>
-          <Text style={s.codigoSub}>Mostre ao entregador ou confirme ao receber seu pedido.</Text>
-          <Text style={s.codigoValor}>{codigoEntrega}</Text>
-          <TextInput
-            testID="input-delivery-code"
-            style={s.codigoInput}
-            value={codigoInput}
-            onChangeText={t => setCodigoInput(t.replace(/[^0-9]/g, '').slice(0, 4))}
-            placeholder="Digite o código de 4 dígitos"
-            placeholderTextColor={C.ink4}
-            keyboardType="number-pad"
-            maxLength={4}
-          />
-          <TouchableOpacity
-            testID="btn-confirm-delivery"
-            style={[s.codigoBtn, (codigoInput.length !== 4 || confirmando) && { opacity: 0.5 }]}
-            onPress={confirmarEntregaComCodigo}
-            disabled={codigoInput.length !== 4 || confirmando}
-            activeOpacity={0.85}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={s.mapaWrap}>
+          <MapView
+            style={s.mapa}
+            initialRegion={{
+              latitude: restLat,
+              longitude: restLng,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
           >
-            <Text style={s.codigoBtnTxt}>{confirmando ? 'Confirmando...' : 'Confirmar entrega'}</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+            <Marker coordinate={{ latitude: restLat, longitude: restLng }} anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={s.markerRest}>
+                <Feather name="map-pin" size={18} color="#fff" />
+              </View>
+            </Marker>
+            <Marker coordinate={{ latitude: restLat + 0.003, longitude: restLng + 0.002 }} anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={s.markerUser}>
+                <Feather name="navigation" size={16} color="#fff" />
+              </View>
+            </Marker>
+          </MapView>
+          <View style={s.mapaBottomCurve} />
+        </View>
+
+        <View style={[s.statusCard, { backgroundColor: statusBg }]}>
+          <Animated.View style={[s.statusIconWrap, { backgroundColor: statusCfg.cor }, pulseAnim]}>
+            <Feather name={statusCfg.icon} size={24} color="#fff" />
+          </Animated.View>
+          <Text style={[s.statusLabel, { color: statusCfg.cor }]}>{statusCfg.label}</Text>
+          <Text style={s.statusSub}>{STATUS_SUBTEXTO[status]}</Text>
+        </View>
+
+        {status !== 'entregue' && (
+          <>
+            <Text style={s.tempoRestante}>15-25 min</Text>
+            <Text style={s.tempoLabel}>tempo estimado</Text>
+          </>
+        )}
+
+        <View style={s.timelineWrap}>
+          {STATUS_ORDEM.map((etapaKey, idx) => {
+            const concluido = idx < idxAtual;
+            const ativo = idx === idxAtual;
+            const pendente = idx > idxAtual;
+            const cfg = STATUS_DISPLAY[etapaKey];
+            const ts = timestamps[etapaKey];
+
+            return (
+              <View key={etapaKey}>
+                <View style={s.etapaRow}>
+                  <View style={s.etapaColLeft}>
+                    <EtapaIcon concluido={concluido} ativo={ativo} icon={cfg.icon} />
+                  </View>
+                  <View style={s.etapaInfo}>
+                    <Text style={[s.etapaLabel, { color: pendente ? C.ink3 : C.ink }]}>
+                      {cfg.label}
+                    </Text>
+                    {ts ? (
+                      <Text style={s.etapaTs}>{'\u00E0s'} {ts}</Text>
+                    ) : pendente ? (
+                      <Text style={s.etapaTs}>—</Text>
+                    ) : null}
+                  </View>
+                </View>
+                {idx < STATUS_ORDEM.length - 1 && (
+                  <EtapaLinha concluida={concluido} />
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        {entregadorVisivel && (
+          <Animated.View style={s.entregadorCard} entering={SlideInDown.duration(400).springify().damping(14)}>
+            <View style={s.entregadorAvatar}>
+              <Text style={s.entregadorIniciais}>CS</Text>
+            </View>
+            <View style={s.entregadorInfo}>
+              <Text style={s.entregadorNome}>Carlos Silva</Text>
+              <Text style={s.entregadorTag}>Entregador parceiro</Text>
+            </View>
+            <View style={s.entregadorRating}>
+              <Feather name="star" size={14} color={C.amber} />
+              <Text style={s.entregadorNota}>4.9</Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {status === 'a_caminho' && (
+          <Animated.View style={s.codigoCard} entering={SlideInDown.duration(400).springify().damping(14)}>
+            <Text style={s.codigoTitulo}>Código de entrega</Text>
+            <Text style={s.codigoSub}>Mostre ao entregador ou confirme ao receber seu pedido.</Text>
+            <Text style={s.codigoValor}>{codigoEntrega}</Text>
+            <TextInput
+              testID="input-delivery-code"
+              style={s.codigoInput}
+              value={codigoInput}
+              onChangeText={t => setCodigoInput(t.replace(/[^0-9]/g, '').slice(0, 4))}
+              placeholder="Digite o código de 4 dígitos"
+              placeholderTextColor={C.ink4}
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+            <TouchableOpacity
+              testID="btn-confirm-delivery"
+              style={[s.codigoBtn, (codigoInput.length !== 4 || confirmando) && { opacity: 0.5 }]}
+              onPress={confirmarEntregaComCodigo}
+              disabled={codigoInput.length !== 4 || confirmando}
+              activeOpacity={0.85}
+            >
+              <Text style={s.codigoBtnTxt}>{confirmando ? 'Confirmando...' : 'Confirmar entrega'}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+      </ScrollView>
 
       <AvaliacaoModal
         visivel={showAvaliacao}
@@ -350,7 +357,7 @@ export default function RastreamentoScreen({ route, navigation }) {
 
 const makeStyles = (C) => StyleSheet.create({
   codigoCard: {
-    position: 'absolute', left: 16, right: 16, bottom: 24,
+    marginHorizontal: 16, marginTop: 14, marginBottom: 8,
     backgroundColor: C.surface, borderRadius: 20, padding: 20,
     ...SHADOW.float,
   },
@@ -372,6 +379,10 @@ const makeStyles = (C) => StyleSheet.create({
   codigoBtnTxt: { fontFamily: F.uiBold, fontSize: 15, color: '#fff' },
 
   root: { flex: 1, backgroundColor: C.bg },
+  scroll: { flex: 1 },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 48 : 32,
+  },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
