@@ -258,7 +258,7 @@ export default function RastreamentoScreen({ route, navigation }) {
 
       {status !== 'entregue' && (
         <>
-          <Text style={s.tempoRestante}>15\u201325 min</Text>
+          <Text style={s.tempoRestante}>15-25 min</Text>
           <Text style={s.tempoLabel}>tempo estimado</Text>
         </>
       )}

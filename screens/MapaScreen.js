@@ -56,33 +56,15 @@ function useMarkerTracking(layoutReady, delay = 450) {
 }
 
 function RestauranteMarker({ rest, onPress }) {
-  const [wrapReady, setWrapReady] = useState(false);
-  const [iconReady, setIconReady] = useState(false);
-  const tracks = useMarkerTracking(wrapReady && iconReady);
   const cor = CORES_CATEGORIA[rest.categoria] ?? '#E8452C';
   return (
     <Marker
       coordinate={{ latitude: rest.lat, longitude: rest.lng }}
       onPress={onPress}
-      tracksViewChanges={tracks}
-      anchor={{ x: 0.5, y: 0.5 }}
-      centerOffset={{ x: 0, y: 0 }}
-    >
-      <View
-        collapsable={false}
-        pointerEvents="box-none"
-        style={markerStyles.wrap}
-        onLayout={() => setWrapReady(true)}
-      >
-        <View collapsable={false} style={[markerStyles.marker, { borderColor: cor }]}>
-          <View collapsable={false} style={[markerStyles.markerInner, { backgroundColor: cor }]}>
-            <View collapsable={false} onLayout={() => setIconReady(true)}>
-              <CategoriaIcone categoria={rest.categoria} size={16} color="#FFFFFF" />
-            </View>
-          </View>
-        </View>
-      </View>
-    </Marker>
+      pinColor={cor}
+      title={rest.nome}
+      description={rest.categoria}
+    />
   );
 }
 
@@ -358,37 +340,6 @@ export default function MapaScreen({ navigation }) {
 }
 
 const markerStyles = StyleSheet.create({
-  wrap: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 8,
-    overflow: 'visible',
-  },
-  marker: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 3,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 7,
-    shadowColor: '#000',
-    shadowOpacity: 0.24,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    overflow: 'visible',
-  },
-  markerInner: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
   userWrap: {
     width: 30,
     height: 30,
