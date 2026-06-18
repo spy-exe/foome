@@ -16,6 +16,9 @@ class OrderCreate(BaseModel):
     items: list[OrderItemCreate] = Field(min_length=1)
     delivery_address: str | None = None
     payment_method: str | None = None
+    coupon_code: str | None = Field(default=None, max_length=30)
+    discount_total: float = Field(default=0, ge=0)
+    free_delivery: bool = False
 
 
 class OrderItemOut(BaseModel):
@@ -47,7 +50,9 @@ class OrderOut(BaseModel):
     status: OrderStatus
     subtotal: float
     delivery_fee: float
+    discount_total: float = 0
     total: float
+    coupon_code: str | None = None
     delivery_address: str | None = None
     payment_method: str | None = None
     delivery_code: str

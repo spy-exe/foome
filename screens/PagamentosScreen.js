@@ -2,13 +2,11 @@ import React, { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Trash2, X, QrCode, CreditCard, DollarSign } from 'lucide-react-native';
-import { getPagamentos, adicionarPagamento, removerPagamento } from '../services/storage';
+import { adicionarPagamento, garantirPagamentosPadrao, removerPagamento } from '../services/storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, R, S, SHADOW } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
-
-const DEFAULT_PAGAMENTOS = [{ id: '1', tipo: 'pix', label: 'PIX', sub: 'Chave: seu@email.com', default: true }];
 
 const makeTipoConfig = (C) => ({
   pix: { icon: QrCode, cor: C.success, bg: C.successLight, label: 'PIX' },
@@ -35,12 +33,7 @@ export default function PagamentosScreen({ navigation }) {
   useFocusEffect(useCallback(() => { carregar(); }, []));
 
   async function carregar() {
-    let lista = await getPagamentos();
-    if (lista.length === 0) {
-      for (const p of DEFAULT_PAGAMENTOS) await adicionarPagamento({ tipo: p.tipo, label: p.label, sub: p.sub, default: true });
-      lista = await getPagamentos();
-    }
-    setPagamentos(lista);
+    setPagamentos(await garantirPagamentosPadrao());
   }
 
   function abrirModal() {
@@ -68,7 +61,7 @@ export default function PagamentosScreen({ navigation }) {
       setSalvando(true);
       await adicionarPagamento({ tipo: tipoSelecionado, label: nomeCartao.trim(), sub: `Final ${numeroCartao.replace(/\D/g, '').slice(-4)}`, default: false });
     }
-    setPagamentos(await getPagamentos());
+    setPagamentos(await garantirPagamentosPadrao());
     setSalvando(false);
     setModalVisible(false);
   }

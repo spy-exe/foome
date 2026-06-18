@@ -12,7 +12,7 @@ describe('adapters', () => {
       const r = mapRestaurante(api);
       expect(r).toEqual(expect.objectContaining({
         id: '1', nome: 'Burger Supreme', categoria: 'Hambúrgueres',
-        avaliacao: 4.8, tempo: '25–35 min', entrega: 'Grátis',
+        avaliacao: 4.8, tempo: '25-35 min', entrega: 'Grátis',
         cor: '#E8452C',
       }));
       expect(r.produtos[0]).toEqual(expect.objectContaining({ id: '10', nome: 'Smash', preco: 32.9 }));

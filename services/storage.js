@@ -79,13 +79,44 @@ export async function removerFavorito(id) {
 // ── Métodos de pagamento (locais, no aparelho) ──
 const PAG_KEY = '@foome_pagamentos';
 
+export const PAGAMENTO_PADRAO = {
+  id: 'pix-default',
+  tipo: 'pix',
+  label: 'PIX',
+  sub: 'Chave cadastrada no Foome',
+  default: true,
+};
+
+export function normalizarPagamento(pagamento = {}) {
+  const tipo = pagamento.tipo || 'credito';
+  const label = pagamento.label
+    || (tipo === 'pix' ? 'PIX' : tipo === 'debito' ? 'Débito' : 'Crédito');
+  return {
+    ...pagamento,
+    id: String(pagamento.id || Date.now()),
+    tipo,
+    label,
+    sub: pagamento.sub || '',
+    default: Boolean(pagamento.default),
+  };
+}
+
 export async function getPagamentos() {
-  return getJSON(PAG_KEY, []);
+  const lista = await getJSON(PAG_KEY, []);
+  return lista.map(normalizarPagamento);
+}
+
+export async function garantirPagamentosPadrao() {
+  const lista = await getPagamentos();
+  if (lista.length > 0) return lista;
+
+  await setJSON(PAG_KEY, [PAGAMENTO_PADRAO]);
+  return [PAGAMENTO_PADRAO];
 }
 
 export async function adicionarPagamento(pagamento) {
   const lista = await getPagamentos();
-  const novo = { id: String(Date.now()), default: lista.length === 0, ...pagamento };
+  const novo = normalizarPagamento({ id: String(Date.now()), default: lista.length === 0, ...pagamento });
   const base = novo.default ? lista.map((p) => ({ ...p, default: false })) : lista;
   const atualizada = [...base, novo];
   await setJSON(PAG_KEY, atualizada);

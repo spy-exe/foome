@@ -59,6 +59,14 @@ const makeBanners = (C) => {
   ];
 };
 
+function normalizarBusca(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 function FoomeRefreshControl({ refreshing }) {
   const s = useThemedStyles(makeStyles);
   const rotate = useSharedValue(0);
@@ -196,7 +204,7 @@ function restaurantesMaisPedidos(pedidos, restaurantes) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const s = useThemedStyles(makeStyles);
   const BANNERS = makeBanners(C);
   const { usuario } = useApp();
@@ -335,8 +343,11 @@ export default function HomeScreen({ navigation }) {
     const filtrados = restaurantes.filter(r => {
       if (catAtiva && r.categoria !== catAtiva) return false;
       if (!termoDebounced) return true;
-      const q = termoDebounced.toLowerCase();
-      return r.nome.toLowerCase().includes(q) || r.categoria.toLowerCase().includes(q);
+      const q = normalizarBusca(termoDebounced);
+      return normalizarBusca(r.nome).includes(q)
+        || normalizarBusca(r.categoria).includes(q)
+        || (r.produtos || []).some((p) =>
+          normalizarBusca(`${p.nome} ${p.descricao} ${p.categoria}`).includes(q));
     });
     if (!coords) return filtrados;
     // Localização disponível: ordena por proximidade.
@@ -349,7 +360,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={C.surface} />
 
       {/* ── Header ── */}
       <View style={s.header}>

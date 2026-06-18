@@ -1,7 +1,15 @@
 import { api } from './api';
 import { mapPedido } from './adapters';
 
-export async function criarPedido({ restauranteId, itens, endereco, pagamento }) {
+export async function criarPedido({
+  restauranteId,
+  itens,
+  endereco,
+  pagamento,
+  cupom,
+  desconto = 0,
+  freteGratis = false,
+}) {
   const payload = {
     restaurant_id: Number(restauranteId),
     items: itens.map((i) => ({
@@ -11,6 +19,9 @@ export async function criarPedido({ restauranteId, itens, endereco, pagamento })
     })),
     delivery_address: endereco || null,
     payment_method: pagamento || null,
+    coupon_code: cupom || null,
+    discount_total: Number(desconto) || 0,
+    free_delivery: Boolean(freteGratis),
   };
   const { data } = await api.post('/orders', payload);
   return mapPedido(data);

@@ -22,6 +22,7 @@ import { criarPedido } from '../services/pedidos';
 import { listarEnderecos, formatarEndereco } from '../services/enderecos';
 import { validarCupom, listarCuponsPublicos } from '../services/cupons';
 import { getStatusClube } from '../services/clube';
+import { garantirPagamentosPadrao } from '../services/storage';
 import CategoriaIcone from '../components/CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
@@ -31,11 +32,20 @@ import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
 
-const makePagamentos = (C) => ([
-  { id: 'pix', label: 'PIX', icon: 'smartphone', cor: C.teal },
-  { id: 'credito', label: 'Crédito', icon: 'credit-card', cor: C.amber },
-  { id: 'debito', label: 'Débito', icon: 'credit-card', cor: C.brand },
-]);
+const makePagamentoVisual = (C) => ({
+  pix: { icon: 'smartphone', cor: C.teal, label: 'PIX' },
+  credito: { icon: 'credit-card', cor: C.amber, label: 'Crédito' },
+  debito: { icon: 'credit-card', cor: C.brand, label: 'Débito' },
+  dinheiro: { icon: 'dollar-sign', cor: C.amber, label: 'Dinheiro' },
+});
+
+function descricaoPagamentoPedido(pagamento) {
+  if (!pagamento) return 'PIX';
+  const base = pagamento.tipo === 'pix'
+    ? 'PIX'
+    : [pagamento.label, pagamento.sub].filter(Boolean).join(' · ');
+  return base.slice(0, 40);
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -131,9 +141,9 @@ function SwipeableItem({ item, cor, onDelete }) {
 }
 
 export default function CarrinhoScreen({ navigation }) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const s = useThemedStyles(makeStyles);
-  const PAGAMENTOS = makePagamentos(C);
+  const PAGAMENTO_VISUAL = makePagamentoVisual(C);
   const { usuario, atualizarPedidosCount } = useApp();
   const { itens, restaurante, totalPreco, limpar, remover } = useCarrinho();
   const [restauranteSnapshot, setRestauranteSnapshot] = useState(restaurante);
@@ -144,7 +154,8 @@ export default function CarrinhoScreen({ navigation }) {
   const [clubeNivel, setClubeNivel] = useState('Bronze');
   const [enderecos, setEnderecos] = useState([]);
   const [enderecoSelId, setEnderecoSelId] = useState(null);
-  const [pagamentoSel, setPagamentoSel] = useState(PAGAMENTOS[0].id);
+  const [pagamentos, setPagamentos] = useState([]);
+  const [pagamentoSel, setPagamentoSel] = useState(null);
   const [showBioOverlay, setShowBioOverlay] = useState(false);
   const [bioStatus, setBioStatus] = useState('idle');
   const [toast, setToast] = useState(null);
@@ -169,13 +180,25 @@ export default function CarrinhoScreen({ navigation }) {
   useFocusEffect(
     React.useCallback(() => {
       let ativo = true;
-      listarEnderecos()
-        .then((lista) => {
+      Promise.all([
+        listarEnderecos().catch(() => []),
+        garantirPagamentosPadrao().catch(() => []),
+      ])
+        .then(([lista, listaPagamentos]) => {
           if (!ativo) return;
           setEnderecos(lista);
           setEnderecoSelId((atual) => atual || (lista.find((e) => e.default) || lista[0])?.id || null);
+          setPagamentos(listaPagamentos);
+          setPagamentoSel((atual) => {
+            if (atual && listaPagamentos.some((p) => p.id === atual)) return atual;
+            return (listaPagamentos.find((p) => p.default) || listaPagamentos[0])?.id || null;
+          });
         })
-        .catch(() => { if (ativo) setEnderecos([]); });
+        .catch(() => {
+          if (!ativo) return;
+          setEnderecos([]);
+          setPagamentos([]);
+        });
       return () => { ativo = false; };
     }, []),
   );
@@ -211,6 +234,16 @@ export default function CarrinhoScreen({ navigation }) {
     || enderecos.find((e) => e.default)
     || enderecos[0]
     || null;
+  const pagamentosCheckout = pagamentos.map((pag) => {
+    const visual = PAGAMENTO_VISUAL[pag.tipo] || PAGAMENTO_VISUAL.credito;
+    return {
+      ...pag,
+      icon: visual.icon,
+      cor: visual.cor,
+      label: pag.label || visual.label,
+      sub: pag.sub || '',
+    };
+  });
 
   function showToast(mensagem) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -259,6 +292,11 @@ export default function CarrinhoScreen({ navigation }) {
     navigation.navigate('PerfilTab', { screen: 'Enderecos' });
   }
 
+  function irParaPagamentos() {
+    hapticSelection();
+    navigation.navigate('PerfilTab', { screen: 'Pagamentos' });
+  }
+
   function selecionarPagamento(id) {
     setPagamentoSel(id);
     hapticSelection();
@@ -301,17 +339,22 @@ export default function CarrinhoScreen({ navigation }) {
         return;
       }
 
+      const pagamento = pagamentosCheckout.find(pag => pag.id === pagamentoSel)
+        || pagamentosCheckout.find(pag => pag.default)
+        || pagamentosCheckout[0];
       setBioStatus('success');
       hapticImpact();
       await sleep(1200);
 
-      const pagamento = PAGAMENTOS.find(pag => pag.id === pagamentoSel);
       const enderecoTexto = `${enderecoSel.apelido ? `${enderecoSel.apelido} · ` : ''}${formatarEndereco(enderecoSel)}`;
       await criarPedido({
         restauranteId: restauranteAtual.id,
         itens,
         endereco: enderecoTexto,
-        pagamento: pagamento?.label ?? 'PIX',
+        pagamento: descricaoPagamentoPedido(pagamento),
+        cupom: cupomAtivo?.cupom.codigo || null,
+        desconto,
+        freteGratis,
       });
       await atualizarPedidosCount();
       hapticSuccess();
@@ -458,8 +501,8 @@ export default function CarrinhoScreen({ navigation }) {
       )}
 
       <Text style={[s.sectionTitle, s.sectionGap]}>Forma de pagamento</Text>
-      <View style={s.pagamentoRow}>
-        {PAGAMENTOS.map(pag => {
+      <View style={s.pagamentoGrid}>
+        {pagamentosCheckout.map(pag => {
           const sel = pagamentoSel === pag.id;
           return (
             <TouchableOpacity
@@ -472,18 +515,23 @@ export default function CarrinhoScreen({ navigation }) {
                 {sel && <View style={s.radioDot} />}
               </View>
               <Feather name={pag.icon} size={18} color={sel ? pag.cor : C.ink3} />
-              <Text style={[s.pagamentoLabel, sel && s.pagamentoLabelSel]}>{pag.label}</Text>
+              <Text style={[s.pagamentoLabel, sel && s.pagamentoLabelSel]} numberOfLines={1}>{pag.label}</Text>
+              {!!pag.sub && <Text style={s.pagamentoSub} numberOfLines={1}>{pag.sub}</Text>}
             </TouchableOpacity>
           );
         })}
       </View>
+      <TouchableOpacity style={s.pagAddLink} onPress={irParaPagamentos} activeOpacity={0.8}>
+        <Feather name="plus" size={14} color={C.brand} />
+        <Text style={s.pagAddLinkTxt}>Gerenciar formas de pagamento</Text>
+      </TouchableOpacity>
     </View>
   ) : null;
 
   return (
     <GestureHandlerRootView style={s.gestureRoot}>
       <View style={s.root}>
-        <StatusBar barStyle="dark-content" backgroundColor={C.surface} />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={C.surface} />
 
         <View style={s.header}>
           <TouchableOpacity
@@ -819,9 +867,9 @@ const makeStyles = (C) => StyleSheet.create({
   endPadrao: { fontFamily: F.monoBold, fontSize: 9, color: C.ink3, backgroundColor: C.bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, letterSpacing: 0.5 },
   endEndereco: { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
 
-  pagamentoRow: { flexDirection: 'row', gap: 8 },
+  pagamentoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pagamentoCard: {
-    flex: 1,
+    width: '31.8%',
     minHeight: 88,
     justifyContent: 'center',
     alignItems: 'center',
@@ -833,8 +881,11 @@ const makeStyles = (C) => StyleSheet.create({
     padding: 10,
   },
   pagamentoCardSel: { borderColor: C.brandBorder, backgroundColor: C.brandLight },
-  pagamentoLabel: { fontFamily: F.semibold, fontSize: 12, color: C.ink2 },
+  pagamentoLabel: { fontFamily: F.semibold, fontSize: 12, color: C.ink2, maxWidth: '100%' },
   pagamentoLabelSel: { color: C.brand },
+  pagamentoSub: { fontFamily: F.regular, fontSize: 10, color: C.ink3, maxWidth: '100%' },
+  pagAddLink: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingLeft: 4 },
+  pagAddLinkTxt: { fontFamily: F.semibold, fontSize: 13, color: C.brand },
 
   vazio: {
     flex: 1,

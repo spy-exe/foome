@@ -11,6 +11,7 @@ import {
   toggleFavorito,
   removerFavorito,
   getPagamentos,
+  garantirPagamentosPadrao,
   adicionarPagamento,
   removerPagamento,
   definirPagamentoPadrao,
@@ -21,6 +22,7 @@ import {
   marcarTodasLidas,
   limparTodosDadosFoome,
   CHAVES_FOOME,
+  PAGAMENTO_PADRAO,
 } from '../../services/storage';
 
 beforeEach(() => {
@@ -154,8 +156,18 @@ describe('storage', () => {
       AsyncStorage.getItem.mockResolvedValue(JSON.stringify([]));
 
       await expect(adicionarPagamento({ tipo: 'pix' })).resolves.toEqual([
-        { id: '1700000000000', default: true, tipo: 'pix' },
+        { id: '1700000000000', default: true, tipo: 'pix', label: 'PIX', sub: '' },
       ]);
+    });
+
+    it('garante PIX padrão quando nenhum método foi cadastrado', async () => {
+      AsyncStorage.getItem.mockResolvedValue(null);
+
+      await expect(garantirPagamentosPadrao()).resolves.toEqual([PAGAMENTO_PADRAO]);
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+        '@foome_pagamentos',
+        JSON.stringify([PAGAMENTO_PADRAO]),
+      );
     });
 
     it('ao adicionar pagamento padrão, remove padrão dos anteriores', async () => {
@@ -168,8 +180,8 @@ describe('storage', () => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         '@foome_pagamentos',
         JSON.stringify([
-          { id: '1', default: false, tipo: 'pix' },
-          { id: '1700000000000', default: true, tipo: 'credito' },
+          { id: '1', default: false, tipo: 'pix', label: 'PIX', sub: '' },
+          { id: '1700000000000', default: true, tipo: 'credito', label: 'Crédito', sub: '' },
         ]),
       );
     });
@@ -180,7 +192,9 @@ describe('storage', () => {
         { id: '2', default: false },
       ]));
 
-      await expect(removerPagamento('1')).resolves.toEqual([{ id: '2', default: true }]);
+      await expect(removerPagamento('1')).resolves.toEqual([
+        { id: '2', default: true, tipo: 'credito', label: 'Crédito', sub: '' },
+      ]);
     });
 
     it('define pagamento padrão', async () => {
@@ -194,8 +208,8 @@ describe('storage', () => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         '@foome_pagamentos',
         JSON.stringify([
-          { id: '1', default: false },
-          { id: '2', default: true },
+          { id: '1', default: false, tipo: 'credito', label: 'Crédito', sub: '' },
+          { id: '2', default: true, tipo: 'credito', label: 'Crédito', sub: '' },
         ]),
       );
     });

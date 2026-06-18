@@ -84,12 +84,18 @@ def create_order(
             )
         )
 
-    delivery_fee = float(restaurant.delivery_fee or 0)
+    delivery_fee_base = float(restaurant.delivery_fee or 0)
+    delivery_fee = 0.0 if payload.free_delivery else delivery_fee_base
+    discount_total = round(float(payload.discount_total or 0), 2)
     if subtotal < float(restaurant.min_order or 0):
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Pedido mínimo de R$ {float(restaurant.min_order):.2f}",
         )
+    if discount_total > subtotal + delivery_fee:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Desconto maior que o total do pedido")
+    if (discount_total > 0 or payload.free_delivery) and not payload.coupon_code:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cupom obrigatório para aplicar desconto")
 
     # Transação atômica: ou cria pedido + itens + histórico, ou nada.
     try:
@@ -99,7 +105,9 @@ def create_order(
             status=OrderStatus.PENDING.value,
             subtotal=subtotal,
             delivery_fee=delivery_fee,
-            total=subtotal + delivery_fee,
+            discount_total=discount_total,
+            total=max(subtotal + delivery_fee - discount_total, 0),
+            coupon_code=payload.coupon_code,
             delivery_address=payload.delivery_address,
             payment_method=payload.payment_method,
             delivery_code=_gen_delivery_code(),

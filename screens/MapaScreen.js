@@ -65,15 +65,14 @@ function RestauranteMarker({ rest, onPress }) {
       coordinate={{ latitude: rest.lat, longitude: rest.lng }}
       onPress={onPress}
       tracksViewChanges={tracks}
-      anchor={{ x: 0.5, y: 0.5 }}
-      centerOffset={{ x: 0, y: 0 }}
+      anchor={{ x: 0.5, y: 0.76 }}
+      centerOffset={{ x: 0, y: -2 }}
     >
-      {/* Wrapper de tamanho fixo: garante que o bitmap capturado contém o pin
-          inteiro (círculo + borda), sem corte. */}
       <View style={markerStyles.wrap}>
-        <View style={[markerStyles.pin, { backgroundColor: cor }]}>
+        <View style={[markerStyles.pinHead, { backgroundColor: cor }]}>
           <CategoriaIcone categoria={rest.categoria} size={18} color="#FFFFFF" />
         </View>
+        <View style={[markerStyles.pinTail, { backgroundColor: cor }]} />
       </View>
     </Marker>
   );
@@ -91,7 +90,7 @@ function UserMarker({ coordinate }) {
 }
 
 export default function MapaScreen({ navigation }) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const s = useThemedStyles(makeStyles);
   const { setRestaurante } = useCarrinho();
   const [selecionado, setSelecionado] = useState(null);
@@ -196,7 +195,7 @@ export default function MapaScreen({ navigation }) {
 
   return (
     <View style={s.root}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <MapView
         ref={mapRef}
@@ -352,24 +351,43 @@ export default function MapaScreen({ navigation }) {
 
 const markerStyles = StyleSheet.create({
   wrap: {
-    width: 48,
-    height: 48,
+    width: 72,
+    height: 84,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    overflow: 'visible',
   },
-  pin: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2.5,
+  pinHead: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    zIndex: 2,
+    elevation: 7,
+    shadowColor: '#000',
+    shadowOpacity: 0.26,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  pinTail: {
+    width: 22,
+    height: 22,
+    marginTop: -13,
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: '#FFFFFF',
+    borderBottomRightRadius: 5,
+    transform: [{ rotate: '45deg' }],
+    zIndex: 1,
+    elevation: 5,
     shadowColor: '#000',
     shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
   userWrap: {
     width: 30,
