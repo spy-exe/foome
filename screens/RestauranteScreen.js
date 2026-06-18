@@ -14,9 +14,11 @@ import Reanimated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
+import { Heart } from 'lucide-react-native';
 import { Feather, Ionicons } from '../components/Icon';
 import { formatarPreco } from '../services/dados';
 import { obterRestaurante } from '../services/restaurantes';
+import { isFavorito, toggleFavorito } from '../services/storage';
 import CategoriaIcone from '../components/CategoriaIcone';
 import { getNotaMediaRestaurante } from '../services/avaliacao';
 import { useCarrinho } from '../contexts/CarrinhoContext';
@@ -57,6 +59,7 @@ export default function RestauranteScreen({ route, navigation }) {
   const [produtos, setProdutos] = useState(restaurante?.produtos ?? []);
   const [menuLoading, setMenuLoading] = useState(true);
   const [subCat, setSubCat] = useState('todas');
+  const [favorito, setFavorito] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [tamanho, setTamanho] = useState('M');
@@ -66,6 +69,12 @@ export default function RestauranteScreen({ route, navigation }) {
 
   useEffect(() => {
     if (restaurante) setRestaurante(restaurante);
+  }, [restaurante?.id]);
+
+  useEffect(() => {
+    let ativo = true;
+    if (restaurante?.id) isFavorito(restaurante.id).then((v) => { if (ativo) setFavorito(v); });
+    return () => { ativo = false; };
   }, [restaurante?.id]);
 
   useEffect(() => {
@@ -138,6 +147,13 @@ export default function RestauranteScreen({ route, navigation }) {
     transform: [{ scale: badgeScale.value }],
   }));
 
+  async function alternarFavorito() {
+    if (!restaurante?.id) return;
+    haptic.light();
+    const novo = await toggleFavorito(restaurante.id);
+    setFavorito(novo);
+  }
+
   function abrirDetalhes(produto) {
     haptic.select();
     setProdutoSelecionado(produto);
@@ -179,6 +195,16 @@ export default function RestauranteScreen({ route, navigation }) {
           style={s.backBtn}
         >
           <Feather name="arrow-left" size={20} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={alternarFavorito}
+          style={s.favBtn}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          <Heart size={20} color="#fff" fill={favorito ? '#fff' : 'transparent'} />
         </TouchableOpacity>
 
         <RNAnimated.View style={[s.headerInfo, { opacity: headerOpacity }]}>
@@ -286,6 +312,17 @@ const makeStyles = (C) => StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: 16,
+    top: Platform.OS === 'ios' ? 52 : 42,
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favBtn: {
+    position: 'absolute',
+    right: 16,
     top: Platform.OS === 'ios' ? 52 : 42,
     width: 40,
     height: 40,

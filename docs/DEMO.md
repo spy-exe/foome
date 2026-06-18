@@ -72,14 +72,41 @@ o perfil `production` apontando para um backend hospedado.
 ## 4. Roteiro da demo (fluxo completo)
 
 1. Onboarding → Cadastro/Login (senha; depois, biometria em *Perfil > Configurações*).
-2. Home lista restaurantes **da API**, ordenados por proximidade (localização).
-3. Abrir restaurante → menu **da API** → adicionar itens.
-4. Carrinho → finalizar (biometria) → pedido criado no backend.
-5. Pedidos → Acompanhar → status avança no servidor; ao ficar *a caminho*,
+2. Home lista restaurantes **da API**, ordenados por proximidade (localização),
+   com vitrine de **cupons reais** no topo.
+3. Abrir restaurante → menu **da API** → adicionar itens (toque no ♥ para favoritar).
+4. **Antes de pedir:** *Perfil > Endereços* → adicionar um endereço (salvo no
+   **backend**, em `/addresses`).
+5. Carrinho → aplicar um **cupom** (ex.: `FOOME10`) → escolher endereço e pagamento
+   → finalizar (biometria) → pedido criado no backend.
+6. Pedidos → Acompanhar → status avança no servidor; ao ficar *a caminho*,
    aparece o **código de entrega** → confirmar → **entregue**.
-6. Avaliar o pedido; alternar tema claro/escuro em Configurações.
+7. *Perfil > Foome Club*: veja seus pontos subirem a cada pedido e o nível evoluir.
 
-## 5. Plano de contingência (backend remoto)
+## 5. Cupons, Endereços e Foome Club (novidades)
+
+**Cupons** (motor em `services/cupons.js`, aplicados no Carrinho):
+
+| Código | Benefício | Regra |
+|---|---|---|
+| `FOOME10` | 10% de desconto | sem mínimo |
+| `FRETEGRATIS` | frete grátis | pedido ≥ R$ 25 |
+| `FOME20` | R$ 20 de desconto | pedido ≥ R$ 80 |
+| `CLUBE15` | 15% (até R$ 40) | exclusivo Foome Club (nível Prata+) |
+
+No carrinho, os cupons disponíveis aparecem como *chips* clicáveis; a validação é
+real (mínimo de pedido, frete grátis e exclusividade do clube).
+
+**Endereços reais:** *Perfil > Endereços* faz CRUD no backend (`/addresses`, por
+usuário, com apelido/CEP/bairro/referência). O endereço escolhido no carrinho vai
+junto no pedido.
+
+**Foome Club** (`services/clube.js`, tela em *Perfil > Foome Club*): 1 ponto por
+R$ 1 gasto, calculado a partir do histórico **real** de pedidos. Níveis
+**Bronze → Prata → Ouro → Diamante**; ao atingir **Prata**, o cupom `CLUBE15` é
+desbloqueado.
+
+## 6. Plano de contingência (backend remoto)
 
 Se a máquina do avaliador não puder subir o Docker, exponha o backend local por
 um túnel e aponte o app para ele:
@@ -96,7 +123,7 @@ Pegue a URL pública (`https://...`) e:
 
 > O CORS do backend já está liberado (`*`), então o túnel funciona direto.
 
-## 6. Testes
+## 7. Testes
 
 ```bash
 npm test                 # 41 testes (serviços, componentes, adapters)

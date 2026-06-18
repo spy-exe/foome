@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Image,
@@ -14,17 +14,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Feather, Ionicons } from '../components/Icon';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { CreditCard, Heart, Crown, ChevronRight } from 'lucide-react-native';
+import { Feather } from '../components/Icon';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { hashSenha } from '../services/auth';
+import { getStatusClube } from '../services/clube';
 import { F, SHADOW } from '../constants/theme';
-
-const ENDERECOS_INICIAIS = [
-  { id: '1', label: 'Casa', endereco: 'Rua das Acacias, 42 - Vassouras, RJ' },
-  { id: '2', label: 'Trabalho', endereco: 'Av. Principal, 100 - Sala 302' },
-];
 
 function iniciais(nome) {
   const partes = String(nome || 'Foome').trim().split(/\s+/).filter(Boolean);
@@ -64,13 +63,30 @@ function ModalShell({ C, children, onClose, title, visible }) {
   );
 }
 
+function MenuRow({ C, icon, label, sub, onPress, divider }) {
+  return (
+    <>
+      {divider && <View style={[s.divider, { backgroundColor: C.border }]} />}
+      <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.8}>
+        <View style={s.rowLeft}>
+          <View style={[s.rowIcon, { backgroundColor: C.bg, borderColor: C.border }]}>{icon}</View>
+          <View style={s.rowText}>
+            <Text style={[s.rowLabel, { color: C.ink }]}>{label}</Text>
+            {sub ? <Text style={[s.rowSub, { color: C.ink3 }]}>{sub}</Text> : null}
+          </View>
+        </View>
+        <ChevronRight size={20} color={C.ink4} />
+      </TouchableOpacity>
+    </>
+  );
+}
+
 export default function PerfilScreen({ navigation }) {
   const { usuario, atualizarUsuario, logout } = useApp();
   const { limpar } = useCarrinho();
   const { C, isDark, preferencia, reset, toggle } = useTheme();
 
-  const [notifAtiva, setNotifAtiva] = useState(true);
-  const [enderecos, setEnderecos] = useState(ENDERECOS_INICIAIS);
+  const [clube, setClube] = useState(null);
   const [modalDados, setModalDados] = useState(false);
   const [editNome, setEditNome] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -78,10 +94,12 @@ export default function PerfilScreen({ navigation }) {
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [modalEndereco, setModalEndereco] = useState(false);
-  const [enderecoEditando, setEnderecoEditando] = useState(null);
-  const [enderecoLabel, setEnderecoLabel] = useState('');
-  const [enderecoTexto, setEnderecoTexto] = useState('');
+
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+    getStatusClube().then((st) => { if (ativo) setClube(st); }).catch(() => {});
+    return () => { ativo = false; };
+  }, []));
 
   function abrirDados() {
     setEditNome(usuario?.nome || '');
@@ -103,9 +121,13 @@ export default function PerfilScreen({ navigation }) {
       return;
     }
 
-    await atualizarUsuario({ ...usuario, nome, email, atualizadoEm: new Date().toISOString() });
-    setModalDados(false);
-    Alert.alert('Pronto', 'Dados atualizados com sucesso.');
+    try {
+      await atualizarUsuario({ ...usuario, nome, email });
+      setModalDados(false);
+      Alert.alert('Pronto', 'Dados atualizados com sucesso.');
+    } catch {
+      Alert.alert('Erro', 'Não foi possível atualizar seus dados.');
+    }
   }
 
   async function alterarSenha() {
@@ -135,7 +157,6 @@ export default function PerfilScreen({ navigation }) {
     const usuarioAtualizado = {
       ...usuario,
       senhaHash: await hashSenha(novaSenha),
-      atualizadoEm: new Date().toISOString(),
     };
     delete usuarioAtualizado.senha;
 
@@ -145,43 +166,6 @@ export default function PerfilScreen({ navigation }) {
     setNovaSenha('');
     setConfirmarSenha('');
     Alert.alert('Sucesso', 'Senha alterada com sucesso.');
-  }
-
-  function abrirNovoEndereco() {
-    setEnderecoEditando(null);
-    setEnderecoLabel('');
-    setEnderecoTexto('');
-    setModalEndereco(true);
-  }
-
-  function abrirEditarEndereco(endereco) {
-    setEnderecoEditando(endereco.id);
-    setEnderecoLabel(endereco.label);
-    setEnderecoTexto(endereco.endereco);
-    setModalEndereco(true);
-  }
-
-  function salvarEndereco() {
-    const label = enderecoLabel.trim();
-    const endereco = enderecoTexto.trim();
-
-    if (!label || !endereco) {
-      Alert.alert('Atenção', 'Preencha nome e endereço.');
-      return;
-    }
-
-    if (enderecoEditando) {
-      setEnderecos(prev => prev.map(item => (
-        item.id === enderecoEditando ? { ...item, label, endereco } : item
-      )));
-    } else {
-      setEnderecos(prev => [...prev, { id: Date.now().toString(), label, endereco }]);
-    }
-
-    setModalEndereco(false);
-    setEnderecoEditando(null);
-    setEnderecoLabel('');
-    setEnderecoTexto('');
   }
 
   async function handleLogout() {
@@ -239,6 +223,44 @@ export default function PerfilScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Foome Club */}
+        <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Clube')}>
+          <LinearGradient
+            colors={[C.brand, '#A11530']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.clubeCard}
+          >
+            <View style={s.clubeCrown}>
+              <Crown size={20} color="#fff" fill="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.clubeKicker}>FOOME CLUB</Text>
+              <Text style={s.clubeTitle}>
+                {clube ? `Nível ${clube.nivel} · ${clube.pontos} pts` : 'Seus pontos e benefícios'}
+              </Text>
+              <Text style={s.clubeSub}>
+                {clube?.proximoNivel
+                  ? `Faltam ${clube.faltamPontos} pts para ${clube.proximoNivel}`
+                  : 'Toque para ver seus benefícios'}
+              </Text>
+            </View>
+            <ChevronRight size={22} color="rgba(255,255,255,0.9)" />
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <Text style={[s.sectionLabel, { color: C.ink }]}>Sua conta</Text>
+        <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <MenuRow C={C} label="Endereços" sub="Onde você recebe seus pedidos" onPress={() => navigation.navigate('Enderecos')}
+            icon={<Feather name="map-pin" size={18} color={C.ink2} />} />
+          <MenuRow C={C} divider label="Formas de pagamento" sub="PIX, cartões e mais" onPress={() => navigation.navigate('Pagamentos')}
+            icon={<CreditCard size={18} color={C.ink2} />} />
+          <MenuRow C={C} divider label="Favoritos" sub="Seus restaurantes salvos" onPress={() => navigation.navigate('Favoritos')}
+            icon={<Heart size={18} color={C.ink2} />} />
+          <MenuRow C={C} divider label="Notificações" sub="Pedidos, ofertas e novidades" onPress={() => navigation.navigate('Notificacoes')}
+            icon={<Feather name="bell" size={18} color={C.ink2} />} />
+        </View>
+
         <Text style={[s.sectionLabel, { color: C.ink }]}>Preferências</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={s.row}>
@@ -269,76 +291,8 @@ export default function PerfilScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={[s.divider, { backgroundColor: C.border }]} />
-
-          <View style={s.row}>
-            <View style={s.rowLeft}>
-              <View style={[s.rowIcon, { backgroundColor: C.bg, borderColor: C.border }]}>
-                <Feather name="bell" size={18} color={C.ink2} />
-              </View>
-              <View style={s.rowText}>
-                <Text style={[s.rowLabel, { color: C.ink }]}>Notificações</Text>
-                <Text style={[s.rowSub, { color: C.ink3 }]}>{notifAtiva ? 'Ativas' : 'Pausadas'}</Text>
-              </View>
-            </View>
-            <Switch
-              value={notifAtiva}
-              onValueChange={setNotifAtiva}
-              trackColor={{ false: C.border, true: C.brandLight }}
-              thumbColor={notifAtiva ? C.brand : C.ink4}
-            />
-          </View>
-        </View>
-
-        <Text style={[s.sectionLabel, { color: C.ink }]}>Endereços salvos</Text>
-        <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {enderecos.map((endereco, index) => (
-            <View key={endereco.id}>
-              <View style={s.addressRow}>
-                <View style={s.rowLeft}>
-                  <View style={[s.rowIcon, { backgroundColor: C.bg, borderColor: C.border }]}>
-                    <Feather
-                      name={endereco.label.toLowerCase().includes('casa') ? 'home' : 'map-pin'}
-                      size={18}
-                      color={C.ink2}
-                    />
-                  </View>
-                  <View style={s.rowText}>
-                    <Text style={[s.rowLabel, { color: C.ink }]}>{endereco.label}</Text>
-                    <Text style={[s.rowSub, { color: C.ink3 }]}>{endereco.endereco}</Text>
-                  </View>
-                </View>
-                <View style={s.addressActions}>
-                  <TouchableOpacity onPress={() => abrirEditarEndereco(endereco)} style={s.iconBtn}>
-                    <Feather name="edit-2" size={16} color={C.ink3} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setEnderecos(prev => prev.filter(item => item.id !== endereco.id))}
-                    style={s.iconBtn}
-                  >
-                    <Feather name="trash-2" size={16} color={C.brand} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {index < enderecos.length - 1 && <View style={[s.divider, { backgroundColor: C.border }]} />}
-            </View>
-          ))}
-
-          {enderecos.length === 0 && (
-            <View style={s.emptyBox}>
-              <Feather name="map-pin" size={24} color={C.ink4} />
-              <Text style={[s.emptyTxt, { color: C.ink3 }]}>Nenhum endereço salvo</Text>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[s.addRow, { borderTopColor: C.border }]}
-            onPress={abrirNovoEndereco}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={18} color={C.brand} />
-            <Text style={[s.addTxt, { color: C.brand }]}>Adicionar endereço</Text>
-          </TouchableOpacity>
+          <MenuRow C={C} divider label="Configurações" sub="Biometria, tema e conta" onPress={() => navigation.navigate('Configuracoes')}
+            icon={<Feather name="settings" size={18} color={C.ink2} />} />
         </View>
 
         <Text style={[s.sectionLabel, { color: C.ink }]}>Segurança</Text>
@@ -357,7 +311,7 @@ export default function PerfilScreen({ navigation }) {
                 <Text style={[s.rowSub, { color: C.ink3 }]}>Validação local com hash</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={C.ink4} />
+            <ChevronRight size={20} color={C.ink4} />
           </View>
         </TouchableOpacity>
 
@@ -428,35 +382,6 @@ export default function PerfilScreen({ navigation }) {
           <Text style={s.modalPrimaryTxt}>Salvar nova senha</Text>
         </TouchableOpacity>
       </ModalShell>
-
-      <ModalShell
-        C={C}
-        visible={modalEndereco}
-        title={enderecoEditando ? 'Editar endereço' : 'Novo endereço'}
-        onClose={() => setModalEndereco(false)}
-      >
-        <Text style={[s.inputLabel, { color: C.ink3 }]}>NOME</Text>
-        <TextInput
-          style={[s.input, { backgroundColor: C.bg, borderColor: C.border, color: C.ink }]}
-          placeholder="Casa, trabalho..."
-          placeholderTextColor={C.ink4}
-          value={enderecoLabel}
-          onChangeText={setEnderecoLabel}
-        />
-        <Text style={[s.inputLabel, { color: C.ink3 }]}>ENDEREÇO</Text>
-        <TextInput
-          style={[s.input, s.inputMultiline, { backgroundColor: C.bg, borderColor: C.border, color: C.ink }]}
-          placeholder="Rua, número, bairro e cidade"
-          placeholderTextColor={C.ink4}
-          multiline
-          textAlignVertical="top"
-          value={enderecoTexto}
-          onChangeText={setEnderecoTexto}
-        />
-        <TouchableOpacity style={[s.modalPrimary, { backgroundColor: C.brand }]} onPress={salvarEndereco}>
-          <Text style={s.modalPrimaryTxt}>Salvar endereço</Text>
-        </TouchableOpacity>
-      </ModalShell>
     </View>
   );
 }
@@ -487,7 +412,7 @@ const s = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     padding: 22,
-    marginBottom: 22,
+    marginBottom: 18,
     ...SHADOW.card,
   },
   avatarWrap: { position: 'relative', marginBottom: 14 },
@@ -525,6 +450,27 @@ const s = StyleSheet.create({
     marginTop: 16,
   },
   editDadosTxt: { fontFamily: F.semibold, fontSize: 14 },
+
+  clubeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 22,
+    ...SHADOW.float,
+    shadowColor: '#A11530',
+    shadowOpacity: 0.3,
+  },
+  clubeCrown: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  clubeKicker: { fontFamily: F.monoBold, fontSize: 10, color: 'rgba(255,255,255,0.8)', letterSpacing: 2 },
+  clubeTitle: { fontFamily: F.heading, fontSize: 16, color: '#fff', marginTop: 3 },
+  clubeSub: { fontFamily: F.regular, fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+
   sectionLabel: {
     fontFamily: F.heading,
     fontSize: 16,
@@ -546,13 +492,6 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  addressRow: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
   rowLeft: {
     flex: 1,
     flexDirection: 'row',
@@ -572,7 +511,6 @@ const s = StyleSheet.create({
   rowLabel: { fontFamily: F.semibold, fontSize: 15 },
   rowSub: { fontFamily: F.regular, fontSize: 12, marginTop: 3, lineHeight: 17 },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  addressActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   iconBtn: {
     width: 36,
     height: 36,
@@ -587,19 +525,7 @@ const s = StyleSheet.create({
     paddingVertical: 7,
   },
   smallChipTxt: { fontFamily: F.semibold, fontSize: 12 },
-  divider: { height: 1, marginVertical: 12 },
-  emptyBox: { alignItems: 'center', paddingVertical: 20, gap: 8 },
-  emptyTxt: { fontFamily: F.regular, fontSize: 13 },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 14,
-    marginTop: 2,
-    borderTopWidth: 1,
-  },
-  addTxt: { fontFamily: F.heading, fontSize: 14 },
+  divider: { height: 1, marginVertical: 8 },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -647,11 +573,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     fontFamily: F.regular,
     fontSize: 15,
-  },
-  inputMultiline: {
-    minHeight: 92,
-    paddingTop: 13,
-    lineHeight: 20,
   },
   modalPrimary: {
     height: 54,

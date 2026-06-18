@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, StatusBar, Platform, TextInput,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather, Ionicons } from '../components/Icon';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import Animated, {
@@ -18,6 +19,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { verificarBiometria } from '../services/biometria';
 import { criarPedido } from '../services/pedidos';
+import { listarEnderecos, formatarEndereco } from '../services/enderecos';
+import { validarCupom, listarCuponsPublicos } from '../services/cupons';
+import { getStatusClube } from '../services/clube';
 import CategoriaIcone from '../components/CategoriaIcone';
 import { formatarPreco } from '../services/dados';
 import { useApp } from '../contexts/AppContext';
@@ -26,12 +30,6 @@ import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
-
-const ENDERECOS_MOCK = [
-  { id: '1', label: 'Casa', endereco: 'Rua das Acácias, 42 - Vassouras, RJ', icon: 'home' },
-  { id: '2', label: 'Trabalho', endereco: 'Av. Principal, 100 - Sala 302 - Vassouras, RJ', icon: 'briefcase' },
-  { id: '3', label: 'Faculdade', endereco: 'Campus Universitário - Vassouras, RJ', icon: 'book-open' },
-];
 
 const makePagamentos = (C) => ([
   { id: 'pix', label: 'PIX', icon: 'smartphone', cor: C.teal },
@@ -141,9 +139,11 @@ export default function CarrinhoScreen({ navigation }) {
   const [restauranteSnapshot, setRestauranteSnapshot] = useState(restaurante);
   const [confirmando, setConfirmando] = useState(false);
   const [cupom, setCupom] = useState('');
-  const [cupomAplicado, setCupomAplicado] = useState(false);
-  const [cupomErro, setCupomErro] = useState(false);
-  const [enderecoSel, setEnderecoSel] = useState(ENDERECOS_MOCK[0].id);
+  const [cupomAtivo, setCupomAtivo] = useState(null); // resultado de validarCupom (ok)
+  const [cupomErro, setCupomErro] = useState(null);
+  const [clubeNivel, setClubeNivel] = useState('Bronze');
+  const [enderecos, setEnderecos] = useState([]);
+  const [enderecoSelId, setEnderecoSelId] = useState(null);
   const [pagamentoSel, setPagamentoSel] = useState(PAGAMENTOS[0].id);
   const [showBioOverlay, setShowBioOverlay] = useState(false);
   const [bioStatus, setBioStatus] = useState('idle');
@@ -158,17 +158,59 @@ export default function CarrinhoScreen({ navigation }) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
 
+  // Nível do clube (libera cupons exclusivos).
+  useEffect(() => {
+    let ativo = true;
+    getStatusClube().then((st) => { if (ativo) setClubeNivel(st.nivel); }).catch(() => {});
+    return () => { ativo = false; };
+  }, []);
+
+  // Endereços reais (recarrega ao voltar de "adicionar endereço").
+  useFocusEffect(
+    React.useCallback(() => {
+      let ativo = true;
+      listarEnderecos()
+        .then((lista) => {
+          if (!ativo) return;
+          setEnderecos(lista);
+          setEnderecoSelId((atual) => atual || (lista.find((e) => e.default) || lista[0])?.id || null);
+        })
+        .catch(() => { if (ativo) setEnderecos([]); });
+      return () => { ativo = false; };
+    }, []),
+  );
+
   const restauranteAtual = restaurante ?? restauranteSnapshot;
-  if (!restauranteAtual) return null;
 
   const subtotal = totalPreco;
-  const taxaEntrega = itens.length === 0
+  const taxaEntregaBase = itens.length === 0 || !restauranteAtual
     ? 0
     : restauranteAtual.entrega === 'Gratis' || restauranteAtual.entrega === 'Grátis'
       ? 0
-      : parseFloat(restauranteAtual.entrega.replace('R$ ', '').replace(',', '.'));
-  const desconto = cupomAplicado ? subtotal * 0.1 : 0;
+      : parseFloat(String(restauranteAtual.entrega).replace('R$ ', '').replace(',', '.')) || 0;
+
+  // Re-valida o cupom ativo quando o subtotal muda (ex.: removeu itens e caiu
+  // abaixo do mínimo).
+  useEffect(() => {
+    if (!cupomAtivo) return;
+    const r = validarCupom(cupomAtivo.cupom.codigo, { subtotal, taxaEntrega: taxaEntregaBase, clubeNivel });
+    if (r.ok) setCupomAtivo(r);
+    else { setCupomAtivo(null); setCupomErro(r.mensagem); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal]);
+
+  if (!restauranteAtual) return null;
+
+  const desconto = cupomAtivo?.desconto || 0;
+  const freteGratis = Boolean(cupomAtivo?.freteGratis);
+  const taxaEntrega = freteGratis ? 0 : taxaEntregaBase;
   const total = Math.max(subtotal + taxaEntrega - desconto, 0);
+
+  const cuponsDisponiveis = listarCuponsPublicos({ clubeNivel });
+  const enderecoSel = enderecos.find((e) => e.id === enderecoSelId)
+    || enderecos.find((e) => e.default)
+    || enderecos[0]
+    || null;
 
   function showToast(mensagem) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -176,24 +218,26 @@ export default function CarrinhoScreen({ navigation }) {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 3000);
   }
 
-  function aplicarCupom() {
-    const codigo = cupom.trim().toUpperCase();
-    if (codigo === 'FOOME10') {
-      setCupomAplicado(true);
-      setCupomErro(false);
+  function aplicarCupom(codigoArg) {
+    const codigo = (typeof codigoArg === 'string' ? codigoArg : cupom).trim();
+    if (!codigo) return;
+    const r = validarCupom(codigo, { subtotal, taxaEntrega: taxaEntregaBase, clubeNivel });
+    setCupom(codigo.toUpperCase());
+    if (r.ok) {
+      setCupomAtivo(r);
+      setCupomErro(null);
       hapticSuccess();
-      return;
+    } else {
+      setCupomAtivo(null);
+      setCupomErro(r.mensagem);
+      hapticError();
     }
-
-    setCupomAplicado(false);
-    setCupomErro(true);
-    hapticError();
   }
 
   function removerCupom() {
-    setCupomAplicado(false);
+    setCupomAtivo(null);
     setCupom('');
-    setCupomErro(false);
+    setCupomErro(null);
     hapticSelection();
   }
 
@@ -206,8 +250,13 @@ export default function CarrinhoScreen({ navigation }) {
   }
 
   function selecionarEndereco(id) {
-    setEnderecoSel(id);
+    setEnderecoSelId(id);
     hapticSelection();
+  }
+
+  function irParaEnderecos() {
+    hapticSelection();
+    navigation.navigate('PerfilTab', { screen: 'Enderecos' });
   }
 
   function selecionarPagamento(id) {
@@ -218,6 +267,19 @@ export default function CarrinhoScreen({ navigation }) {
   async function confirmarPedido() {
     if (itens.length === 0 || !usuario || confirmando) {
       hapticError();
+      return;
+    }
+
+    if (!enderecoSel) {
+      hapticError();
+      Alert.alert(
+        'Endereço de entrega',
+        'Adicione um endereço para receber seu pedido.',
+        [
+          { text: 'Agora não', style: 'cancel' },
+          { text: 'Adicionar', onPress: irParaEnderecos },
+        ],
+      );
       return;
     }
 
@@ -243,12 +305,12 @@ export default function CarrinhoScreen({ navigation }) {
       hapticImpact();
       await sleep(1200);
 
-      const endereco = ENDERECOS_MOCK.find(end => end.id === enderecoSel);
       const pagamento = PAGAMENTOS.find(pag => pag.id === pagamentoSel);
+      const enderecoTexto = `${enderecoSel.apelido ? `${enderecoSel.apelido} · ` : ''}${formatarEndereco(enderecoSel)}`;
       await criarPedido({
         restauranteId: restauranteAtual.id,
         itens,
-        endereco: endereco ? `${endereco.label} · ${endereco.endereco}` : null,
+        endereco: enderecoTexto,
         pagamento: pagamento?.label ?? 'PIX',
       });
       await atualizarPedidosCount();
@@ -284,30 +346,30 @@ export default function CarrinhoScreen({ navigation }) {
     <View style={s.checkout}>
       <Text style={s.sectionTitle}>Cupom de desconto</Text>
       <View style={s.cupomRow}>
-        <View style={[s.cupomInput, cupomAplicado && s.cupomInputOk, cupomErro && s.cupomInputErr]}>
-          <Feather name="tag" size={16} color={cupomAplicado ? C.teal : C.ink3} />
+        <View style={[s.cupomInput, cupomAtivo && s.cupomInputOk, cupomErro && s.cupomInputErr]}>
+          <Feather name="tag" size={16} color={cupomAtivo ? C.teal : C.ink3} />
           <TextInput
             style={s.cupomTxtInput}
-            placeholder="Cupom de desconto"
+            placeholder="Tem um cupom?"
             placeholderTextColor={C.ink4}
             value={cupom}
             onChangeText={(v) => {
               setCupom(v);
-              setCupomErro(false);
+              setCupomErro(null);
             }}
             autoCapitalize="characters"
-            editable={!cupomAplicado}
+            editable={!cupomAtivo}
             returnKeyType="done"
-            onSubmitEditing={aplicarCupom}
+            onSubmitEditing={() => aplicarCupom()}
           />
-          {cupomAplicado && (
+          {cupomAtivo && (
             <Feather name="check-circle" size={16} color={C.teal} />
           )}
         </View>
-        {!cupomAplicado ? (
+        {!cupomAtivo ? (
           <TouchableOpacity
             style={s.cupomBtn}
-            onPress={aplicarCupom}
+            onPress={() => aplicarCupom()}
             activeOpacity={0.85}
           >
             <Text style={s.cupomBtnTxt}>Aplicar</Text>
@@ -322,42 +384,78 @@ export default function CarrinhoScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </View>
-      {cupomAplicado && (
+
+      {!cupomAtivo && cuponsDisponiveis.length > 0 && (
+        <View style={s.cupomChips}>
+          {cuponsDisponiveis.map((c) => (
+            <TouchableOpacity
+              key={c.codigo}
+              style={[s.cupomChip, { borderColor: c.cor }]}
+              onPress={() => aplicarCupom(c.codigo)}
+              activeOpacity={0.85}
+            >
+              <Feather name="tag" size={11} color={c.cor} />
+              <Text style={[s.cupomChipTxt, { color: c.cor }]}>{c.codigo}</Text>
+              <Text style={s.cupomChipSub}>{c.titulo}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {cupomAtivo && (
         <View style={s.cupomOk}>
           <Feather name="check" size={12} color={C.teal} />
-          <Text style={s.cupomOkTxt}>10% de desconto aplicado!</Text>
+          <Text style={s.cupomOkTxt}>{cupomAtivo.mensagem}</Text>
         </View>
       )}
       {cupomErro && (
         <View style={s.cupomErr}>
           <Feather name="alert-circle" size={12} color={C.brand} />
-          <Text style={s.cupomErrTxt}>Cupom inválido. Tente FOOME10</Text>
+          <Text style={s.cupomErrTxt}>{cupomErro}</Text>
         </View>
       )}
 
       <Text style={[s.sectionTitle, s.sectionGap]}>Endereço de entrega</Text>
-      {ENDERECOS_MOCK.map(end => {
-        const sel = enderecoSel === end.id;
-        return (
-          <TouchableOpacity
-            key={end.id}
-            style={[s.enderecoCard, sel && s.enderecoCardSel]}
-            onPress={() => selecionarEndereco(end.id)}
-            activeOpacity={0.82}
-          >
-            <View style={[s.radio, sel && s.radioSel]}>
-              {sel && <View style={s.radioDot} />}
-            </View>
-            <View style={s.endInfo}>
-              <View style={s.endTitleRow}>
-                <Feather name={end.icon} size={14} color={sel ? C.brand : C.ink3} />
-                <Text style={[s.endLabel, sel && s.endLabelSel]}>{end.label}</Text>
-              </View>
-              <Text style={s.endEndereco} numberOfLines={1}>{end.endereco}</Text>
-            </View>
+      {enderecos.length === 0 ? (
+        <TouchableOpacity style={s.endVazio} onPress={irParaEnderecos} activeOpacity={0.85}>
+          <Feather name="plus" size={18} color={C.brand} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.endVazioTitle}>Adicionar endereço</Text>
+            <Text style={s.endVazioSub}>Você ainda não tem um endereço salvo</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.ink3} />
+        </TouchableOpacity>
+      ) : (
+        <>
+          {enderecos.map((end) => {
+            const sel = enderecoSel?.id === end.id;
+            return (
+              <TouchableOpacity
+                key={end.id}
+                style={[s.enderecoCard, sel && s.enderecoCardSel]}
+                onPress={() => selecionarEndereco(end.id)}
+                activeOpacity={0.82}
+              >
+                <View style={[s.radio, sel && s.radioSel]}>
+                  {sel && <View style={s.radioDot} />}
+                </View>
+                <View style={s.endInfo}>
+                  <View style={s.endTitleRow}>
+                    <Feather name="map-pin" size={14} color={sel ? C.brand : C.ink3} />
+                    <Text style={[s.endLabel, sel && s.endLabelSel]}>{end.apelido || 'Endereço'}</Text>
+                    {end.default && <Text style={s.endPadrao}>padrão</Text>}
+                  </View>
+                  <Text style={s.endEndereco} numberOfLines={1}>{formatarEndereco(end)}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity style={s.endAddLink} onPress={irParaEnderecos} activeOpacity={0.8}>
+            <Feather name="plus" size={14} color={C.brand} />
+            <Text style={s.endAddLinkTxt}>Adicionar outro endereço</Text>
           </TouchableOpacity>
-        );
-      })}
+        </>
+      )}
 
       <Text style={[s.sectionTitle, s.sectionGap]}>Forma de pagamento</Text>
       <View style={s.pagamentoRow}>
@@ -442,10 +540,16 @@ export default function CarrinhoScreen({ navigation }) {
                 {taxaEntrega === 0 ? 'Grátis' : formatarPreco(taxaEntrega)}
               </Text>
             </View>
-            {cupomAplicado && (
+            {desconto > 0 && (
               <View style={s.linha}>
-                <Text style={s.linhaLabel}>Cupom FOOME10</Text>
+                <Text style={s.linhaLabel}>Cupom {cupomAtivo?.cupom.codigo}</Text>
                 <Text style={s.descontoVal}>- {formatarPreco(desconto)}</Text>
+              </View>
+            )}
+            {freteGratis && (
+              <View style={s.linha}>
+                <Text style={s.linhaLabel}>Cupom {cupomAtivo?.cupom.codigo}</Text>
+                <Text style={s.descontoVal}>Frete grátis</Text>
               </View>
             )}
             <View style={[s.linha, s.totalRow]}>
@@ -636,6 +740,20 @@ const makeStyles = (C) => StyleSheet.create({
     borderColor: C.border,
   },
   cupomBtnTxt: { fontFamily: F.heading, fontSize: 13, color: '#fff' },
+  cupomChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  cupomChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: C.surface,
+  },
+  cupomChipTxt: { fontFamily: F.monoBold, fontSize: 11 },
+  cupomChipSub: { fontFamily: F.medium, fontSize: 11, color: C.ink3 },
   cupomOk: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -663,6 +781,21 @@ const makeStyles = (C) => StyleSheet.create({
     marginBottom: 8,
   },
   enderecoCardSel: { borderColor: C.brandBorder, backgroundColor: C.brandLight },
+  endVazio: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: C.brandBorder,
+    padding: 14,
+  },
+  endVazioTitle: { fontFamily: F.semibold, fontSize: 14, color: C.brand },
+  endVazioSub: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 2 },
+  endAddLink: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingLeft: 4 },
+  endAddLinkTxt: { fontFamily: F.semibold, fontSize: 13, color: C.brand },
   radio: {
     width: 20,
     height: 20,
@@ -683,6 +816,7 @@ const makeStyles = (C) => StyleSheet.create({
   endTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   endLabel: { fontFamily: F.semibold, fontSize: 13, color: C.ink2 },
   endLabelSel: { color: C.brand },
+  endPadrao: { fontFamily: F.monoBold, fontSize: 9, color: C.ink3, backgroundColor: C.bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, letterSpacing: 0.5 },
   endEndereco: { fontFamily: F.regular, fontSize: 12, color: C.ink3 },
 
   pagamentoRow: { flexDirection: 'row', gap: 8 },

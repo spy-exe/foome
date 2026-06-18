@@ -14,6 +14,7 @@ import Reanimated, {
 import { Feather, Ionicons } from '../components/Icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { formatarPreco } from '../services/dados';
+import { listarCuponsPublicos } from '../services/cupons';
 import { listarPedidos } from '../services/pedidos';
 import { getItensFavoritos, getUltimoPedido } from '../services/recomendacao';
 import { useRestaurantes } from '../hooks/useRestaurantes';
@@ -43,32 +44,20 @@ const CATEGORIAS = [
   { key: 'Açaí',         label: 'Açaí',      icon: 'cafe-outline'       },
 ];
 
-const makeBanners = (C) => ([
-  {
-    id: '1',
-    titulo: 'Frete grátis',
-    subtitulo: 'Em pedidos acima de R$ 30',
-    cor: C.brand,
-    icone: 'truck',
-    tag: 'OFERTA DO DIA',
-  },
-  {
-    id: '2',
-    titulo: 'Novo: Açaí da Vila',
-    subtitulo: 'Peça já e aproveite',
-    cor: '#9333EA',
-    icone: 'heart',
-    tag: 'NOVIDADE',
-  },
-  {
-    id: '3',
-    titulo: '10% off no pix',
-    subtitulo: 'Use o cupom FOOME10',
-    cor: C.teal,
-    icone: 'dollar-sign',
+const makeBanners = (C) => {
+  const cupons = listarCuponsPublicos({}).slice(0, 3).map((c) => ({
+    id: c.codigo,
+    titulo: c.titulo,
+    subtitulo: `${c.descricao} — cupom ${c.codigo}`,
+    cor: c.cor,
+    icone: 'tag',
     tag: 'CUPOM',
-  },
-]);
+  }));
+  return [
+    { id: 'clube', titulo: 'Foome Club', subtitulo: 'Junte pontos e ganhe cupons exclusivos', cor: C.midnight, icone: 'star', tag: 'NOVO' },
+    ...cupons,
+  ];
+};
 
 function FoomeRefreshControl({ refreshing }) {
   const s = useThemedStyles(makeStyles);

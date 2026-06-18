@@ -8,6 +8,7 @@ import { Feather, Ionicons } from '../components/Icon';
 import * as Location from 'expo-location';
 import { useRestaurantes } from '../hooks/useRestaurantes';
 import CategoriaIcone from '../components/CategoriaIcone';
+import Glass from '../components/Glass';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { F, SHADOW } from '../constants/theme';
 import { haptic } from '../utils/haptics';
@@ -40,12 +41,59 @@ const CORES_CATEGORIA = {
   'Açaí':         '#6D28D9',
 };
 
+/**
+ * Mantém `tracksViewChanges` ligado só nos primeiros instantes após montar e
+ * depois desliga. Isso conserta o bug dos pins cortados no Android: o marker é
+ * rasterizado em bitmap e, com o tracking ligado o tempo todo, a captura podia
+ * acontecer antes do ícone terminar o layout (pin "pela metade"). Ligado no
+ * início garante a captura correta; desligado depois evita flicker/custo.
+ */
+function useStopTracking(delay = 800) {
+  const [tracks, setTracks] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setTracks(false), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  return tracks;
+}
+
+function RestauranteMarker({ rest, onPress }) {
+  const tracks = useStopTracking();
+  const cor = CORES_CATEGORIA[rest.categoria] ?? '#E8452C';
+  return (
+    <Marker
+      coordinate={{ latitude: rest.lat, longitude: rest.lng }}
+      onPress={onPress}
+      tracksViewChanges={tracks}
+      anchor={{ x: 0.5, y: 0.5 }}
+      centerOffset={{ x: 0, y: 0 }}
+    >
+      {/* Wrapper de tamanho fixo: garante que o bitmap capturado contém o pin
+          inteiro (círculo + borda), sem corte. */}
+      <View style={markerStyles.wrap}>
+        <View style={[markerStyles.pin, { backgroundColor: cor }]}>
+          <CategoriaIcone categoria={rest.categoria} size={18} color="#FFFFFF" />
+        </View>
+      </View>
+    </Marker>
+  );
+}
+
+function UserMarker({ coordinate }) {
+  const tracks = useStopTracking();
+  return (
+    <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracks}>
+      <View style={markerStyles.userWrap}>
+        <View style={markerStyles.userDot} />
+      </View>
+    </Marker>
+  );
+}
+
 export default function MapaScreen({ navigation }) {
   const { C } = useTheme();
   const s = useThemedStyles(makeStyles);
   const { setRestaurante } = useCarrinho();
-  const [locOk,    setLocOk]    = useState(false);
-  const [buscando, setBuscando] = useState(true);
   const [selecionado, setSelecionado] = useState(null);
   const [filtroCat, setFiltroCat] = useState(null);
   const [userLoc, setUserLoc] = useState(null);
@@ -143,7 +191,7 @@ export default function MapaScreen({ navigation }) {
       });
       return;
     }
-    navigation.navigate('Restaurante', { restaurante: selecionado, usuario });
+    navigation.navigate('Restaurante', { restaurante: selecionado });
   }
 
   return (
@@ -158,45 +206,16 @@ export default function MapaScreen({ navigation }) {
         onPress={fechar}
       >
         {markersFiltrados.map(rest => (
-          <Marker
-            key={rest.id}
-            coordinate={{ latitude: rest.lat, longitude: rest.lng }}
-            onPress={() => onPin(rest)}
-          >
-            <View style={{ padding: 4, overflow: 'visible' }}>
-              <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: CORES_CATEGORIA[rest.categoria] ?? '#E8452C',
-                borderWidth: 2.5,
-                borderColor: '#FFFFFF',
-                alignItems: 'center',
-                justifyContent: 'center',
-                elevation: 4,
-              }}>
-                <CategoriaIcone categoria={rest.categoria} size={18} color={rest.cor} />
-              </View>
-            </View>
-          </Marker>
+          <RestauranteMarker key={rest.id} rest={rest} onPress={() => onPin(rest)} />
         ))}
 
         {userLoc && locStatus === 'granted' && (
-          <Marker coordinate={{ latitude: userLoc.latitude, longitude: userLoc.longitude }}>
-            <View style={{ padding: 4, overflow: 'visible' }}>
-              <View style={{
-                width: 24, height: 24, borderRadius: 12,
-                backgroundColor: '#2563EB',
-                borderWidth: 3, borderColor: '#FFFFFF',
-                elevation: 6,
-              }} />
-            </View>
-          </Marker>
+          <UserMarker coordinate={{ latitude: userLoc.latitude, longitude: userLoc.longitude }} />
         )}
       </MapView>
 
-      {/* ── Header flutuante ── */}
-      <View style={s.header}>
+      {/* ── Header flutuante (glass) ── */}
+      <Glass style={s.header} radius={22} intensity={0.9}>
         <TouchableOpacity
           onPress={() => {
             haptic.select();
@@ -216,7 +235,7 @@ export default function MapaScreen({ navigation }) {
           </View>
         </View>
         {locStatus === 'loading' && <ActivityIndicator size="small" color={C.brand} />}
-      </View>
+      </Glass>
 
       {locStatus === 'denied' && (
         <View style={s.permBanner}>
@@ -273,13 +292,13 @@ export default function MapaScreen({ navigation }) {
         </View>
       )}
 
-      {/* ── Bottom sheet animado ── */}
+      {/* ── Bottom sheet animado (glass) ── */}
       <Animated.View
-        style={[s.sheet, { transform: [{ translateY: slideY }] }]}
+        style={[s.sheetWrap, { transform: [{ translateY: slideY }] }]}
         pointerEvents={selecionado ? 'auto' : 'none'}
       >
         {selecionado && (
-          <>
+          <Glass style={s.sheet} radius={28} intensity={0.94}>
             <View style={s.handle} />
             <View style={[s.sheetCover, { backgroundColor: `${selecionado.cor}18` }]}>
               <CategoriaIcone categoria={selecionado.categoria} size={46} color={selecionado.cor} />
@@ -317,39 +336,71 @@ export default function MapaScreen({ navigation }) {
               style={[s.sheetBtn, { backgroundColor: selecionado.cor }]}
               onPress={() => {
                 haptic.light();
-                setRestaurante(selecionado);
-                navigation.navigate('HomeTab', {
-                  screen: 'Restaurante',
-                  params: { restaurante: selecionado },
-                });
+                abrirCardapio();
               }}
               activeOpacity={0.85}
             >
               <Text style={s.sheetBtnTxt}>Ver cardápio</Text>
               <Feather name="arrow-right" size={16} color="#fff" />
             </TouchableOpacity>
-          </>
+          </Glass>
         )}
       </Animated.View>
     </View>
   );
 }
 
+const markerStyles = StyleSheet.create({
+  wrap: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pin: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  userWrap: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#2563EB',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    elevation: 6,
+  },
+});
+
 const makeStyles = (C) => StyleSheet.create({
   root: { flex: 1 },
 
   header: {
     position: 'absolute',
-    top: 0, left: 0, right: 0,
+    top: Platform.OS === 'ios' ? 54 : 40,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: C.surface,
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 54 : 44,
-    paddingBottom: 14,
-    ...SHADOW.float,
-    shadowOffset: { width: 0, height: 2 },
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   backBtn: {
     width: 42, height: 42,
@@ -367,7 +418,7 @@ const makeStyles = (C) => StyleSheet.create({
 
   permBanner: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 118 : 108,
+    top: Platform.OS === 'ios' ? 122 : 110,
     left: 16,
     right: 16,
     minHeight: 44,
@@ -406,14 +457,14 @@ const makeStyles = (C) => StyleSheet.create({
 
   filtroRow: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 118 : 108,
+    top: Platform.OS === 'ios' ? 122 : 110,
     left: 0,
     right: 0,
     paddingLeft: 16,
     paddingRight: 76,
   },
   filtroRowWithBanner: {
-    top: Platform.OS === 'ios' ? 172 : 162,
+    top: Platform.OS === 'ios' ? 176 : 164,
   },
   filtroContent: { gap: 6, paddingRight: 16 },
   filtroChip: {
@@ -432,45 +483,13 @@ const makeStyles = (C) => StyleSheet.create({
   filtroTxt: { fontFamily: F.medium, fontSize: 12, color: C.ink2 },
   filtroTxtOn: { color: '#fff' },
 
-  pinWrapper: {
-    padding: 6, // espaço para o shadow não ser clipado pelo Marker
-    alignItems: 'center',
-  },
-  pin: {
-    width: 50, height: 50,
-    borderRadius: 25,
-    backgroundColor: C.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: C.border,
-    shadowColor: '#17172B',
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-  },
-  pinEmoji: { fontSize: 20 },
-  pinPoint: {
-    width: 0,
-    height: 0,
-    marginTop: -1,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-
-  sheet: {
+  sheetWrap: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    backgroundColor: C.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  },
+  sheet: {
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 42 : 26,
-    ...SHADOW.sheet,
   },
   handle: {
     width: 44, height: 4,
@@ -487,7 +506,6 @@ const makeStyles = (C) => StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  sheetCoverEmoji: { fontSize: 44 },
   sheetCoverBadge: {
     position: 'absolute',
     right: 12,

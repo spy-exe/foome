@@ -6,6 +6,7 @@ import PagamentosScreen from '../screens/PagamentosScreen';
 import FavoritosScreen from '../screens/FavoritosScreen';
 import NotificacoesScreen from '../screens/NotificacoesScreen';
 import ConfiguracoesScreen from '../screens/ConfiguracoesScreen';
+import ClubeScreen from '../screens/ClubeScreen';
 
 const Stack = createStackNavigator();
 
@@ -13,6 +14,7 @@ export default function PerfilStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: true }}>
       <Stack.Screen name="Perfil" component={PerfilScreen} />
+      <Stack.Screen name="Clube" component={ClubeScreen} />
       <Stack.Screen name="Enderecos" component={EnderecoScreen} />
       <Stack.Screen name="Pagamentos" component={PagamentosScreen} />
       <Stack.Screen name="Favoritos" component={FavoritosScreen} />

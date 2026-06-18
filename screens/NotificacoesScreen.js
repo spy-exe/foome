@@ -1,25 +1,50 @@
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Bell, Package, Tag, CheckCheck } from 'lucide-react-native';
-import { Feather, Ionicons } from '../components/Icon';
+import { Bell, Package, Tag, CheckCheck, Truck } from 'lucide-react-native';
+import { Feather } from '../components/Icon';
 import { getNotificacoes, salvarNotificacoes, marcarNotificacaoLida, marcarTodasLidas } from '../services/storage';
+import { listarPedidos } from '../services/pedidos';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, R, S, SHADOW } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
 
-const NOTIF_MOCK = [
-  { id: '1', tipo: 'entregue', titulo: 'Pedido entregue!', corpo: 'Seu pedido do Burger Supreme chegou. Bom apetite!', lida: false, ts: Date.now() - 300000 },
-  { id: '2', tipo: 'promo', titulo: 'Oferta relâmpago', corpo: 'Pizza Napoli com 20% off por 2 horas. Aproveite!', lida: false, ts: Date.now() - 7200000 },
-  { id: '3', tipo: 'confirmado', titulo: 'Pedido confirmado', corpo: 'Sushi Zen confirmou seu pedido.', lida: true, ts: Date.now() - 86400000 },
-];
-
 const makeTipoConfig = (C) => ({
   entregue: { icon: Package, cor: C.success },
+  a_caminho: { icon: Truck, cor: C.info },
   promo: { icon: Tag, cor: C.warning },
   confirmado: { icon: CheckCheck, cor: C.brand },
 });
+
+// Notificações REAIS: derivadas do histórico de pedidos do usuário + uma oferta
+// vinculada a um cupom que funciona de verdade. Nada de dados fabricados.
+function gerarDosPedidos(pedidos) {
+  return pedidos.slice(0, 10).map((p) => {
+    const restaurante = p.restauranteNome || p.restaurante || 'seu restaurante';
+    const ts = new Date(p.atualizadoEm || p.timestamp).getTime() || Date.now();
+    const base = { id: `pedido-${p.id}`, ts, lida: false };
+    if (p.status === 'entregue') {
+      return { ...base, tipo: 'entregue', titulo: 'Pedido entregue!', corpo: `Seu pedido em ${restaurante} chegou. Bom apetite!` };
+    }
+    if (p.status === 'a_caminho') {
+      return { ...base, tipo: 'a_caminho', titulo: 'Saiu para entrega', corpo: `${restaurante} está a caminho. Tenha o código de entrega em mãos.` };
+    }
+    if (p.status === 'preparando') {
+      return { ...base, tipo: 'confirmado', titulo: 'Preparando seu pedido', corpo: `${restaurante} já está preparando seu pedido ${p.numero}.` };
+    }
+    return { ...base, tipo: 'confirmado', titulo: 'Pedido confirmado', corpo: `${restaurante} confirmou seu pedido ${p.numero}.` };
+  });
+}
+
+const PROMO_FIXA = {
+  id: 'promo-foome10',
+  tipo: 'promo',
+  titulo: '10% OFF no seu pedido',
+  corpo: 'Use o cupom FOOME10 no carrinho e ganhe 10% de desconto.',
+  ts: Date.now() - 3600000,
+  lida: false,
+};
 
 function formatarTempo(ts) {
   const diff = Date.now() - ts;
@@ -42,21 +67,30 @@ export default function NotificacoesScreen({ navigation }) {
   useFocusEffect(useCallback(() => { carregar(); }, []));
 
   async function carregar() {
-    let lista = await getNotificacoes();
-    if (lista.length === 0) { await salvarNotificacoes(NOTIF_MOCK); lista = NOTIF_MOCK; }
+    let pedidos = [];
+    try { pedidos = await listarPedidos(); } catch { pedidos = []; }
+
+    const geradas = [...gerarDosPedidos(pedidos), PROMO_FIXA].sort((a, b) => b.ts - a.ts);
+
+    // Preserva o estado de "lida" do que já foi visto.
+    const salvas = await getNotificacoes();
+    const lidas = new Set(salvas.filter((n) => n.lida).map((n) => n.id));
+    const lista = geradas.map((n) => (lidas.has(n.id) ? { ...n, lida: true } : n));
+
+    await salvarNotificacoes(lista);
     setNotificacoes(lista);
   }
 
-  const naoLidas = notificacoes.filter(n => !n.lida).length;
+  const naoLidas = notificacoes.filter((n) => !n.lida).length;
 
   async function handleMarcarTodasLidas() {
     await marcarTodasLidas();
-    setNotificacoes(prev => prev.map(n => ({ ...n, lida: true })));
+    setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
   }
 
   async function handleToggleLida(id) {
     await marcarNotificacaoLida(id);
-    setNotificacoes(prev => prev.map(n => n.id === id ? { ...n, lida: true } : n));
+    setNotificacoes((prev) => prev.map((n) => (n.id === id ? { ...n, lida: true } : n)));
   }
 
   return (
@@ -76,7 +110,7 @@ export default function NotificacoesScreen({ navigation }) {
           </View>
         ) : (
           <>
-            {notificacoes.map(notif => {
+            {notificacoes.map((notif) => {
               const cfg = TIPO_CONFIG[notif.tipo] || TIPO_CONFIG.confirmado;
               const IconComp = cfg.icon;
               return (

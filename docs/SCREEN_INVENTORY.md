@@ -3,6 +3,15 @@
 > Documentação completa de todas as 23 telas do aplicativo.
 > Cada tela inclui: objetivo, entrada/saída, dados, estados e ações.
 
+> ⚠️ **Status (pós-faxina):** este documento é o *spec de design* original.
+> O app implementado tem **19 telas reais**. Diferenças: `RecuperarSenhaScreen`
+> e `AvaliacaoScreen` não foram implementadas; `BuscaScreen`, `CategoriasScreen`
+> e `ProdutoDetalheScreen` foram **removidas** (a busca é inline na Home; o
+> detalhe do produto virou um *bottom sheet*); o **Mapa** mostra restaurantes
+> próximos (não rastreio do entregador). **Novo:** `ClubeScreen` (Foome Club).
+> Endereços agora são **reais** (backend `/addresses`) e há **motor de cupons**.
+> Veja `docs/DEMO.md`.
+
 ---
 
 ## 1. SplashScreen
