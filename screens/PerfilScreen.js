@@ -206,7 +206,7 @@ export default function PerfilScreen({ navigation }) {
             <AvatarPerfil C={C} nome={usuario?.nome} uri={usuario?.fotoUri} />
             <TouchableOpacity
               style={[s.avatarEdit, { backgroundColor: C.brand, borderColor: C.surface }]}
-              onPress={() => navigation.navigate('Cadastro')}
+              onPress={abrirDados}
               activeOpacity={0.85}
             >
               <Feather name="camera" size={15} color="#fff" />

@@ -237,7 +237,6 @@ export default function CadastroScreen({ navigation }) {
 
       haptic.success();
       login(resultado.usuario);
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch {
       haptic.error();
       Alert.alert('Cadastro', 'Não foi possível criar sua conta. Tente novamente.');

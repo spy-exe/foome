@@ -65,7 +65,6 @@ function RootNavigator() {
       {usuario ? (
         <>
           <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="Cadastro" component={CadastroScreen} />
         </>
       ) : (
         <>
