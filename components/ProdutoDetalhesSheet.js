@@ -9,10 +9,12 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Animated as RNAnimated,
+  Image,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import CategoriaIcone from './CategoriaIcone';
 import { formatarPreco } from '../services/dados';
+import { TAMANHOS_PRODUTO, precoPorTamanho } from '../services/tamanhos';
 import { F, TYPE, R, S, SHADOW } from '../constants/theme';
 import { ICON_SIZE } from '../constants/icons';
 import PrimaryButton from './PrimaryButton';
@@ -109,6 +111,7 @@ export default function ProdutoDetalhesSheet({
   produto,
   cor,
   tamanho,
+  precoAtual,
   observacoes,
   onTamanhoChange,
   onObservacoesChange,
@@ -123,25 +126,35 @@ export default function ProdutoDetalhesSheet({
   return (
     <BottomSheetSimples visible={visible} onClose={onClose} onDismiss={onDismiss}>
       <View style={s.sheetContent}>
-        <CategoriaIcone categoria={produto.categoria} size={40} color={C.brand} />
+        {produto.imageUrl ? (
+          <Image source={{ uri: produto.imageUrl }} style={s.sheetPhoto} />
+        ) : (
+          <View style={s.sheetIconFallback}>
+            <CategoriaIcone categoria={produto.categoria} size={40} color={C.brand} />
+          </View>
+        )}
         <Text style={s.sheetNome}>{produto.nome}</Text>
         <Text style={s.sheetDesc}>{produto.descricao}</Text>
 
         <Text style={s.sheetSection}>Tamanho</Text>
         <View style={s.tamanhoRow}>
-          {['P', 'M', 'G'].map(opcao => {
-            const ativo = tamanho === opcao;
+          {TAMANHOS_PRODUTO.map(opcao => {
+            const ativo = tamanho === opcao.key;
+            const preco = precoPorTamanho(produto.precoBase ?? produto.preco, opcao.key);
             return (
               <TouchableOpacity
-                key={opcao}
+                key={opcao.key}
                 style={[s.tamanhoBtn, ativo && { borderColor: cor, backgroundColor: cor + '12' }]}
                 activeOpacity={0.82}
                 onPress={() => {
                   haptic.select();
-                  onTamanhoChange(opcao);
+                  onTamanhoChange(opcao.key);
                 }}
               >
-                <Text style={[s.tamanhoTxt, ativo && { color: cor }]}>{opcao}</Text>
+                <Text style={[s.tamanhoTxt, ativo && { color: cor }]}>{opcao.label}</Text>
+                <Text style={[s.tamanhoPreco, ativo && { color: cor }]}>
+                  {formatarPreco(preco)}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -159,7 +172,7 @@ export default function ProdutoDetalhesSheet({
 
         <PrimaryButton
           testID="btn-add-cart"
-          label={`Adicionar · ${formatarPreco(produto.preco)}`}
+          label={`Adicionar · ${formatarPreco(precoAtual ?? produto.preco)}`}
           color={cor}
           onPress={onAdicionar}
           style={s.sheetCta}
@@ -208,6 +221,21 @@ const makeStyles = (C) => StyleSheet.create({
     alignItems: 'center',
   },
   sheetContent: { gap: 10 },
+  sheetPhoto: {
+    width: '100%',
+    height: 150,
+    borderRadius: R.xl,
+    backgroundColor: C.offWhite,
+  },
+  sheetIconFallback: {
+    alignSelf: 'center',
+    width: 74,
+    height: 74,
+    borderRadius: R.full,
+    backgroundColor: C.brandLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   sheetEmoji: {
     fontSize: 48,
     textAlign: 'center',
@@ -237,17 +265,23 @@ const makeStyles = (C) => StyleSheet.create({
   tamanhoRow: { flexDirection: 'row', gap: S.sm },
   tamanhoBtn: {
     flex: 1,
-    height: 44,
+    minHeight: 52,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: C.offWhite,
+    gap: 3,
   },
   tamanhoTxt: {
     fontFamily: F.uiSemi,
     fontSize: 14,
+    color: C.inkMid,
+  },
+  tamanhoPreco: {
+    fontFamily: F.mono,
+    fontSize: 11,
     color: C.inkMid,
   },
   obsInput: {

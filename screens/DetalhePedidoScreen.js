@@ -146,7 +146,11 @@ export default function DetalhePedidoScreen({ route, navigation }) {
             <CategoriaIcone categoria={item.categoria} size={24} color={pedido.restauranteCor || C.brand} />
             <View style={s.itemInfo}>
               <Text style={s.itemNome}>{item.nome}</Text>
-              <Text style={s.itemQtd}>{item.qtd}× {formatarPreco(item.preco)}</Text>
+              <Text style={s.itemQtd}>
+                {item.qtd}x {formatarPreco(item.preco)}
+                {item.tamanho ? ` - Tam. ${item.tamanho}` : ''}
+              </Text>
+              {item.observacao ? <Text style={s.itemObs}>{item.observacao}</Text> : null}
             </View>
             <Text style={[s.itemTotal, { color: pedido.restauranteCor || C.brand }]}>
               {formatarPreco(item.preco * item.qtd)}
@@ -259,6 +263,7 @@ const makeStyles = (C) => StyleSheet.create({
   itemInfo: { flex: 1 },
   itemNome: { fontFamily: F.semibold, fontSize: 14, color: C.ink },
   itemQtd: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 2 },
+  itemObs: { fontFamily: F.regular, fontSize: 11, color: C.ink3, marginTop: 2 },
   itemTotal: { fontFamily: F.bold, fontSize: 14, minWidth: 72, textAlign: 'right' },
 
   totalRow: {

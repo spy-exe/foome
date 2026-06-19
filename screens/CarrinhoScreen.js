@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, StatusBar, Platform, TextInput,
+  Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather, Ionicons } from '../components/Icon';
@@ -124,9 +125,16 @@ function SwipeableItem({ item, cor, onDelete }) {
       onSwipeableWillOpen={hapticSelection}
     >
       <View style={s.item}>
-        <CategoriaIcone categoria={item.categoria} size={26} color={cor} />
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={s.itemPhoto} />
+        ) : (
+          <View style={s.itemIconFallback}>
+            <CategoriaIcone categoria={item.categoria} size={26} color={cor} />
+          </View>
+        )}
         <View style={s.itemInfo}>
           <Text style={s.itemNome}>{item.nome}</Text>
+          {item.tamanho ? <Text style={s.itemSize}>Tamanho {item.tamanho}</Text> : null}
           <Text style={s.itemUnit}>{formatarPreco(item.preco)} / un.</Text>
         </View>
         <View style={s.qtdChip}>
@@ -713,9 +721,26 @@ const makeStyles = (C) => StyleSheet.create({
     padding: 14,
     ...SHADOW.card,
   },
+  itemPhoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    marginRight: 12,
+    backgroundColor: C.offWhite,
+  },
+  itemIconFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: C.offWhite,
+  },
   itemEmoji: { fontSize: 24, marginRight: 12 },
   itemInfo: { flex: 1 },
   itemNome: { fontFamily: F.semibold, fontSize: 14, color: C.ink },
+  itemSize: { fontFamily: F.semibold, fontSize: 11, color: C.ink2, marginTop: 2 },
   itemUnit: { fontFamily: F.regular, fontSize: 12, color: C.ink3, marginTop: 2 },
   qtdChip: {
     backgroundColor: C.bg,

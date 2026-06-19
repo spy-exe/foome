@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   StatusBar, Animated, Platform, ActivityIndicator, ScrollView,
+  ImageBackground,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Feather, Ionicons } from '../components/Icon';
@@ -290,7 +291,14 @@ export default function MapaScreen({ navigation }) {
           <Glass style={s.sheet} radius={28} intensity={0.94}>
             <View style={s.handle} />
             <View style={[s.sheetCover, { backgroundColor: `${selecionado.cor}18` }]}>
-              <CategoriaIcone categoria={selecionado.categoria} size={46} color={selecionado.cor} />
+              {selecionado.imageUrl ? (
+                <>
+                  <ImageBackground source={{ uri: selecionado.imageUrl }} style={s.sheetCoverPhoto} />
+                  <View style={s.sheetCoverShade} />
+                </>
+              ) : (
+                <CategoriaIcone categoria={selecionado.categoria} size={46} color={selecionado.cor} />
+              )}
               <View style={[s.sheetCoverBadge, { backgroundColor: selecionado.cor }]}>
                 <Text style={s.sheetCoverBadgeTxt}>{selecionado.categoria}</Text>
               </View>
@@ -474,6 +482,13 @@ const makeStyles = (C) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  sheetCoverPhoto: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sheetCoverShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(11,18,32,0.22)',
   },
   sheetCoverBadge: {
     position: 'absolute',

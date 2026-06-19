@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatarPreco } from '../services/dados';
 import { F, R, S, SHADOW } from '../constants/theme';
@@ -19,13 +19,17 @@ export default function ProdutoCard({ produto, cor, quantidade, onPress, onAdici
         activeOpacity={0.86}
         onPress={onPress}
       >
-        <LinearGradient colors={gradCores} style={s.foto}>
-          <CategoriaIcone categoria={produto.categoria || categoria} size={32} color="#FFFFFF" />
-        </LinearGradient>
+        {produto.imageUrl ? (
+          <Image source={{ uri: produto.imageUrl }} style={s.foto} />
+        ) : (
+          <LinearGradient colors={gradCores} style={s.foto}>
+            <CategoriaIcone categoria={produto.categoria || categoria} size={32} color="#FFFFFF" />
+          </LinearGradient>
+        )}
         <View style={s.info}>
           <Text style={s.nome} numberOfLines={1}>{produto.nome}</Text>
           <Text style={s.desc} numberOfLines={2}>{produto.descricao}</Text>
-          <Text style={s.preco}>{formatarPreco(produto.preco)}</Text>
+          <Text style={s.preco}>A partir de {formatarPreco(produto.preco)}</Text>
         </View>
       </TouchableOpacity>
       <Stepper
@@ -69,6 +73,7 @@ const makeStyles = (C) => StyleSheet.create({
     borderRadius: R.lg,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: C.offWhite,
   },
   emoji: { fontSize: 34 },
   info: { flex: 1, gap: 3 },

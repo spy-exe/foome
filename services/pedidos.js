@@ -13,8 +13,9 @@ export async function criarPedido({
   const payload = {
     restaurant_id: Number(restauranteId),
     items: itens.map((i) => ({
-      menu_item_id: Number(i.id),
+      menu_item_id: Number(i.menuItemId || i.id),
       quantity: i.qtd ?? 1,
+      size: i.tamanho || 'P',
       notes: i.observacao || null,
     })),
     delivery_address: endereco || null,

@@ -8,6 +8,7 @@ from app.models.order import OrderStatus
 class OrderItemCreate(BaseModel):
     menu_item_id: int
     quantity: int = Field(default=1, ge=1)
+    size: str | None = Field(default="P", pattern="^[PMG]$")
     notes: str | None = None
 
 
@@ -29,6 +30,8 @@ class OrderItemOut(BaseModel):
     name: str | None = None
     quantity: int
     unit_price: float
+    size: str | None = None
+    image_url: str | None = None
     notes: str | None = None
 
 
@@ -47,6 +50,7 @@ class OrderOut(BaseModel):
     restaurant_id: int
     restaurant_name: str | None = None
     restaurant_category: str | None = None
+    restaurant_image_url: str | None = None
     status: OrderStatus
     subtotal: float
     delivery_fee: float

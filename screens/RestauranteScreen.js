@@ -29,6 +29,7 @@ import ProdutoDetalhesSheet from '../components/ProdutoDetalhesSheet';
 import { haptic } from '../utils/haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/useThemedStyles';
+import { precoPorTamanho, produtoComTamanho } from '../services/tamanhos';
 
 const HEADER_MAX = 220;
 const HEADER_MIN = 100;
@@ -62,7 +63,7 @@ export default function RestauranteScreen({ route, navigation }) {
   const [favorito, setFavorito] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [sheetVisible, setSheetVisible] = useState(false);
-  const [tamanho, setTamanho] = useState('M');
+  const [tamanho, setTamanho] = useState('P');
   const [observacoes, setObservacoes] = useState('');
   const scrollY = useRef(new RNAnimated.Value(0)).current;
   const badgeScale = useSharedValue(1);
@@ -113,7 +114,18 @@ export default function RestauranteScreen({ route, navigation }) {
     }
   }, [totalItens]);
 
-  const qtd = id => itens.find(item => item.id === id)?.qtd ?? 0;
+  const qtd = id => itens
+    .filter(item => item.menuItemId === String(id) || item.id === String(id))
+    .reduce((total, item) => total + item.qtd, 0);
+
+  function adicionarRapido(produto) {
+    adicionar(produtoComTamanho(produto, 'P'));
+  }
+
+  function removerProduto(produto) {
+    const linha = itens.find(item => item.menuItemId === String(produto.id) || item.id === String(produto.id));
+    if (linha) remover(linha.id);
+  }
   const produtosFiltrados = useMemo(() => {
     if (subCat === 'todas') return produtos;
     return produtos.filter(produto => classificarProduto(produto) === subCat);
@@ -157,7 +169,7 @@ export default function RestauranteScreen({ route, navigation }) {
   function abrirDetalhes(produto) {
     haptic.select();
     setProdutoSelecionado(produto);
-    setTamanho('M');
+    setTamanho('P');
     setObservacoes('');
     setSheetVisible(true);
   }
@@ -170,13 +182,13 @@ export default function RestauranteScreen({ route, navigation }) {
   function descartarDetalhes() {
     setProdutoSelecionado(null);
     setObservacoes('');
-    setTamanho('M');
+    setTamanho('P');
   }
 
   function adicionarSelecionado() {
     if (!produtoSelecionado) return;
     haptic.light();
-    adicionar(produtoSelecionado);
+    adicionar(produtoComTamanho(produtoSelecionado, tamanho, observacoes));
     setSheetVisible(false);
   }
 
@@ -254,8 +266,8 @@ export default function RestauranteScreen({ route, navigation }) {
             item={item}
             cor={restaurante.cor}
             quantidade={qtd(item.id)}
-            onAdicionar={() => adicionar(item)}
-            onRemover={() => remover(item.id)}
+            onAdicionar={() => adicionarRapido(item)}
+            onRemover={() => removerProduto(item)}
             onPress={() => abrirDetalhes(item)}
           />
         )}
@@ -288,6 +300,7 @@ export default function RestauranteScreen({ route, navigation }) {
         produto={produtoSelecionado}
         cor={restaurante.cor}
         tamanho={tamanho}
+        precoAtual={precoPorTamanho(produtoSelecionado?.precoBase ?? produtoSelecionado?.preco, tamanho)}
         observacoes={observacoes}
         onTamanhoChange={setTamanho}
         onObservacoesChange={setObservacoes}

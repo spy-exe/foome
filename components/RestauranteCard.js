@@ -1,5 +1,5 @@
 import React, { memo, useRef } from 'react';
-import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Animated, ImageBackground, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Clock, ChefHat, Truck } from 'lucide-react-native';
 import { F, TYPE, R, S, SHADOW } from '../constants/theme';
@@ -44,23 +44,42 @@ const RestauranteCard = memo(function RestauranteCard({ restaurante, onPress }) 
           onPress?.();
         }}
       >
-        {/* ── Topo com gradiente midnight → categoria ── */}
-        <LinearGradient
-          colors={[C.midnight, restaurante.cor + 'CC']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.topo}
-        >
-          <View style={[s.iconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-            <CategoriaIcone categoria={restaurante.categoria} size={34} color={C.white} />
-          </View>
-
-          {popular && (
-            <View style={s.badge}>
-              <Text style={s.badgeTxt}>POPULAR</Text>
+        {restaurante.imageUrl ? (
+          <ImageBackground
+            source={{ uri: restaurante.imageUrl }}
+            style={s.topo}
+            imageStyle={s.topoImg}
+          >
+            <LinearGradient
+              colors={['rgba(11,18,32,0.08)', 'rgba(11,18,32,0.70)']}
+              style={s.topoOverlay}
+            >
+              <Text style={s.coverTitle}>{restaurante.categoria}</Text>
+              {popular && (
+                <View style={s.badge}>
+                  <Text style={s.badgeTxt}>POPULAR</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </ImageBackground>
+        ) : (
+          <LinearGradient
+            colors={[C.midnight, restaurante.cor + 'CC']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.topo}
+          >
+            <View style={[s.iconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+              <CategoriaIcone categoria={restaurante.categoria} size={34} color={C.white} />
             </View>
-          )}
-        </LinearGradient>
+
+            {popular && (
+              <View style={s.badge}>
+                <Text style={s.badgeTxt}>POPULAR</Text>
+              </View>
+            )}
+          </LinearGradient>
+        )}
 
         {/* ── Corpo ── */}
         <View style={s.corpo}>
@@ -103,6 +122,21 @@ const makeStyles = (C) => StyleSheet.create({
     height: 140,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  topoImg: {
+    resizeMode: 'cover',
+  },
+  topoOverlay: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'flex-end',
+    padding: S.lg,
+  },
+  coverTitle: {
+    fontFamily: F.uiBold,
+    fontSize: 13,
+    color: C.white,
+    letterSpacing: 0,
   },
   iconWrap: {
     width: 64,

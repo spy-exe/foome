@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -66,17 +66,21 @@ const RestauranteProdutoCard = memo(function RestauranteProdutoCard({
         style={s.cardPressArea}
         activeOpacity={0.86}
         accessibilityRole="button"
-        accessibilityLabel={`${item.nome}, ${formatarPreco(item.preco)}`}
+        accessibilityLabel={`${item.nome}, a partir de ${formatarPreco(item.preco)}`}
         hitSlop={4}
         onPress={onPress}
       >
         <Reanimated.View style={[s.prodImg, { backgroundColor: cor + '18' }, emojiStyle]}>
-          <CategoriaIcone categoria={item.categoria} size={28} color={cor} />
+          {item.imageUrl ? (
+            <Image source={{ uri: item.imageUrl }} style={s.prodPhoto} />
+          ) : (
+            <CategoriaIcone categoria={item.categoria} size={28} color={cor} />
+          )}
         </Reanimated.View>
         <View style={s.prodInfo}>
           <Text style={s.prodNome}>{item.nome}</Text>
           <Text style={s.prodDesc} numberOfLines={2}>{item.descricao}</Text>
-          <Text style={[s.prodPreco, { color: cor }]}>{formatarPreco(item.preco)}</Text>
+          <Text style={[s.prodPreco, { color: cor }]}>A partir de {formatarPreco(item.preco)}</Text>
         </View>
       </TouchableOpacity>
 
@@ -113,6 +117,11 @@ const makeStyles = (C) => StyleSheet.create({
     borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  prodPhoto: {
+    width: '100%',
+    height: '100%',
   },
   prodEmoji: { fontSize: 34 },
   prodInfo: { flex: 1 },

@@ -66,6 +66,10 @@ class Order(Base):
     def restaurant_category(self) -> str | None:
         return self.restaurant.category if self.restaurant else None
 
+    @property
+    def restaurant_image_url(self) -> str | None:
+        return self.restaurant.image_url if self.restaurant else None
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -83,6 +87,20 @@ class OrderItem(Base):
     @property
     def name(self) -> str | None:
         return self.menu_item.name if self.menu_item else None
+
+    @property
+    def image_url(self) -> str | None:
+        return self.menu_item.image_url if self.menu_item else None
+
+    @property
+    def size(self) -> str | None:
+        if not self.notes:
+            return None
+        first_line = self.notes.splitlines()[0].strip()
+        if first_line.startswith("Tamanho: "):
+            size = first_line.replace("Tamanho: ", "", 1).strip().upper()
+            return size if size in {"P", "M", "G"} else None
+        return None
 
 
 class OrderStatusHistory(Base):

@@ -25,9 +25,12 @@ function formatarEntrega(fee) {
 export function mapProduto(p, categoria) {
   return {
     id: String(p.id),
+    menuItemId: String(p.id),
     nome: p.name,
     descricao: p.description || '',
     preco: Number(p.price),
+    precoBase: Number(p.price),
+    imageUrl: p.image_url || null,
     categoria,
     disponivel: p.is_available !== false,
   };
@@ -47,6 +50,7 @@ export function mapRestaurante(r) {
     pedidoMinimo: Number(r.min_order) || 0,
     aberto: r.is_open !== false,
     cor: corDe(r.category),
+    imageUrl: r.image_url || null,
     lat: r.lat,
     lng: r.lng,
     produtos: (r.menu_items || []).map((p) => mapProduto(p, r.category)),
@@ -88,6 +92,7 @@ export function mapPedido(o) {
     restauranteNome: nome,
     restauranteCategoria: categoria,
     restauranteCor: corDe(categoria),
+    restauranteImageUrl: o.restaurant_image_url || null,
     // Objeto pronto para o carrinho (pedir de novo).
     restauranteRef: {
       id: String(o.restaurant_id),
@@ -97,11 +102,14 @@ export function mapPedido(o) {
     },
     itens: (o.items || []).map((i) => ({
       id: String(i.menu_item_id),
+      menuItemId: String(i.menu_item_id),
       nome: i.name,
       preco: Number(i.unit_price),
       qtd: i.quantity,
       categoria,
-      observacao: i.notes || '',
+      tamanho: i.size || extrairTamanho(i.notes),
+      imageUrl: i.image_url || null,
+      observacao: limparObservacaoTamanho(i.notes),
     })),
     historico: (o.history || []).map((h) => ({
       status: STATUS_API_TO_APP[h.status] || 'confirmado',
@@ -109,4 +117,15 @@ export function mapPedido(o) {
       timestamp: h.timestamp,
     })),
   };
+}
+
+function extrairTamanho(notes) {
+  const match = String(notes || '').match(/^Tamanho:\s*([PMG])/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+function limparObservacaoTamanho(notes) {
+  return String(notes || '')
+    .replace(/^Tamanho:\s*[PMG]\s*\n?/i, '')
+    .trim();
 }

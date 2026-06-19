@@ -20,10 +20,22 @@ from app.schemas.order import (
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 _TERMINAL = {OrderStatus.DELIVERED, OrderStatus.CANCELLED}
+_SIZE_FACTORS = {"P": 1.0, "M": 1.2, "G": 1.4}
 
 
 def _gen_delivery_code() -> str:
     return f"{random.randint(0, 9999):04d}"
+
+
+def _price_for_size(base_price: float, size: str | None) -> float:
+    factor = _SIZE_FACTORS.get((size or "P").upper(), 1.0)
+    return round(float(base_price) * factor, 2)
+
+
+def _notes_with_size(size: str | None, notes: str | None) -> str:
+    selected = (size or "P").upper()
+    extra = (notes or "").strip()
+    return f"Tamanho: {selected}" + (f"\n{extra}" if extra else "")
 
 
 def _load_order(order_id: int, user: User, db: Session) -> Order:
@@ -73,14 +85,14 @@ def create_order(
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, f"Item '{menu_item.name}' indisponível"
             )
-        unit_price = float(menu_item.price)
+        unit_price = _price_for_size(float(menu_item.price), item.size)
         subtotal += unit_price * item.quantity
         order_items.append(
             OrderItem(
                 menu_item_id=menu_item.id,
                 quantity=item.quantity,
                 unit_price=unit_price,
-                notes=item.notes,
+                notes=_notes_with_size(item.size, item.notes),
             )
         )
 
