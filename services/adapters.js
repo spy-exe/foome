@@ -101,7 +101,7 @@ export function mapPedido(o) {
       cor: corDe(categoria),
     },
     itens: (o.items || []).map((i) => ({
-      id: String(i.menu_item_id),
+      id: String(i.id),
       menuItemId: String(i.menu_item_id),
       nome: i.name,
       preco: Number(i.unit_price),
