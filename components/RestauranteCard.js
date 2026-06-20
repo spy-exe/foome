@@ -169,6 +169,7 @@ const makeStyles = (C) => StyleSheet.create({
   },
   nome: {
     ...TYPE.h4,
+    color: C.ink,
     flex: 1,
   },
   ratingPill: {

@@ -69,9 +69,10 @@ export async function autenticar(email, senha) {
   }
 }
 
-export async function atualizarPerfil({ nome, telefone, fotoUri }) {
+export async function atualizarPerfil({ nome, email, telefone, fotoUri }) {
   const body = {};
   if (nome !== undefined) body.name = nome;
+  if (email !== undefined) body.email = email.trim().toLowerCase();
   if (telefone !== undefined) body.phone = telefone;
   const { data } = await api.patch('/users/me', body);
   if (fotoUri !== undefined) {
@@ -79,6 +80,19 @@ export async function atualizarPerfil({ nome, telefone, fotoUri }) {
     else await AsyncStorage.removeItem(FOTO_KEY);
   }
   return mapUsuario(data, await getFoto());
+}
+
+export async function alterarSenha({ senhaAtual, novaSenha }) {
+  await api.put('/users/me/password', {
+    current_password: senhaAtual,
+    new_password: novaSenha,
+  });
+}
+
+export async function excluirConta() {
+  await api.delete('/users/me');
+  await clearTokens();
+  await AsyncStorage.removeItem(FOTO_KEY);
 }
 
 export async function validarSessao() {

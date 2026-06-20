@@ -96,6 +96,7 @@ export function AppProvider({ children }) {
   const atualizarUsuario = useCallback(async (usuarioAtualizado) => {
     const atualizado = await atualizarPerfil({
       nome: usuarioAtualizado.nome,
+      email: usuarioAtualizado.email,
       telefone: usuarioAtualizado.telefone,
       fotoUri: usuarioAtualizado.fotoUri,
     });

@@ -21,7 +21,7 @@ import { Feather } from '../components/Icon';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { hashSenha } from '../services/auth';
+import { alterarSenha as alterarSenhaApi } from '../services/auth';
 import { getStatusClube } from '../services/clube';
 import { F, SHADOW } from '../constants/theme';
 
@@ -125,8 +125,8 @@ export default function PerfilScreen({ navigation }) {
       await atualizarUsuario({ ...usuario, nome, email });
       setModalDados(false);
       Alert.alert('Pronto', 'Dados atualizados com sucesso.');
-    } catch {
-      Alert.alert('Erro', 'Não foi possível atualizar seus dados.');
+    } catch (e) {
+      Alert.alert('Erro', e?.mensagem || 'Não foi possível atualizar seus dados.');
     }
   }
 
@@ -144,23 +144,16 @@ export default function PerfilScreen({ navigation }) {
       return;
     }
 
-    const hashAtual = await hashSenha(senhaAtual);
-    const senhaConfere = usuario?.senhaHash
-      ? hashAtual === usuario.senhaHash
-      : senhaAtual === usuario?.senha;
-
-    if (!senhaConfere) {
-      Alert.alert('Senha incorreta', 'A senha atual não confere.');
+    try {
+      await alterarSenhaApi({ senhaAtual, novaSenha });
+    } catch (e) {
+      Alert.alert(
+        e?.status === 401 ? 'Senha incorreta' : 'Erro',
+        e?.mensagem || 'Não foi possível alterar a senha.',
+      );
       return;
     }
 
-    const usuarioAtualizado = {
-      ...usuario,
-      senhaHash: await hashSenha(novaSenha),
-    };
-    delete usuarioAtualizado.senha;
-
-    await atualizarUsuario(usuarioAtualizado);
     setModalSenha(false);
     setSenhaAtual('');
     setNovaSenha('');

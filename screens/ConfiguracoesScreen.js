@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useApp } from '../contexts/AppContext';
 import { useCarrinho } from '../contexts/CarrinhoContext';
 import { limparTodosDadosFoome } from '../services/storage';
-import { logout as authLogout } from '../services/auth';
+import { excluirConta } from '../services/auth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, R, S, SHADOW } from '../constants/theme';
 import { useThemedStyles } from '../utils/useThemedStyles';
@@ -56,9 +56,14 @@ export default function ConfiguracoesScreen({ navigation }) {
     Alert.alert('Excluir conta?', 'Todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Excluir', style: 'destructive', onPress: async () => {
+        try {
+          await excluirConta();
+        } catch (e) {
+          Alert.alert('Erro', e?.mensagem || 'Não foi possível excluir a conta. Tente novamente.');
+          return;
+        }
         await limparTodosDadosFoome();
         limpar();
-        await authLogout();
         logout();
       }},
     ]);
