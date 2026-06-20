@@ -31,7 +31,7 @@ describe('adapters', () => {
         status: 'IN_DELIVERY', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T01:00:00Z',
         subtotal: 80, delivery_fee: 8, total: 88, payment_method: 'pix',
         delivery_address: 'Rua X', delivery_code: '1234',
-        items: [{ menu_item_id: 9, name: 'Combo', unit_price: 68.9, quantity: 1 }],
+        items: [{ id: 42, menu_item_id: 9, name: 'Combo', unit_price: 68.9, quantity: 1 }],
         history: [
           { status: 'PENDING', timestamp: '2026-01-01T00:00:00Z' },
           { status: 'IN_DELIVERY', timestamp: '2026-01-01T00:30:00Z' },
@@ -44,7 +44,7 @@ describe('adapters', () => {
       expect(p.restauranteRef).toEqual(expect.objectContaining({ id: '3', nome: 'Sushi Zen' }));
       expect(p.status).toBe('a_caminho');
       expect(p.codigoEntrega).toBe('1234');
-      expect(p.itens[0]).toEqual(expect.objectContaining({ id: '9', nome: 'Combo', qtd: 1 }));
+      expect(p.itens[0]).toEqual(expect.objectContaining({ id: '42', menuItemId: '9', nome: 'Combo', qtd: 1 }));
       expect(p.historico.map(h => h.status)).toEqual(['confirmado', 'a_caminho']);
     });
   });
